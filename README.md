@@ -19,11 +19,11 @@ pip install -r requirements.txt
 
 Starten Sie den Server mit:
 ```bash
-python main.py
+python src/main.py
 ```
 oder
 ```bash
-uvicorn main:app --reload
+uvicorn src.main:app --reload
 ```
 
 Der Server läuft dann unter http://localhost:8000

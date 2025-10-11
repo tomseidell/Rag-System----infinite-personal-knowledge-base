@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.cors import CORSMiddleware # fast api middleware ist direkt als middleware in fastapi accessible 
 
 app = FastAPI(
     title="FastAPI Project",
@@ -18,7 +18,7 @@ app.add_middleware(
 
 @app.get("/")
 async def root():
-    return {"message": "Welcome to FastAPI Project test"}
+    return {"message": "Welcome to FastAPI Project testrrrr"}
 
 @app.get("/health")
 async def health_check():
@@ -26,4 +26,4 @@ async def health_check():
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host="0.0.0.0", port=8000) # when we start python environment locally with main.py, this function gets called and starts the server
