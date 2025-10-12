@@ -1,6 +1,7 @@
-from pydantic import BaseSettings # hilft uns settings aufzusetzen, kann automatisch envs importieren und unsere class typisieren
-import os #greift auf env zu 
+from pydantic_settings import BaseSettings  # neuer Importimport os #greift auf env zu 
 from dotenv import load_dotenv
+import os # access to system 
+
 load_dotenv()
 
 class Config(BaseSettings):
@@ -14,6 +15,7 @@ class Config(BaseSettings):
 
     DB_POOL_SIZE:int = 16 # max number of connections in the pool
     DB_POOL_TTL:int = 60 * 20 #max amount of time in secs a connection can keep alive before a recycle
-    DB_POOL_PRE_PING:bool = true #connection gets tested before connecting 
+    DB_POOL_PRE_PING:bool = True #connection gets tested before connecting 
 
 
+settings = Config()
