@@ -1,21 +1,26 @@
-from pydantic_settings import BaseSettings  # neuer Importimport os #greift auf env zu 
-from dotenv import load_dotenv
-import os # access to system 
+from dotenv import load_dotenv  # preload env variables
+import os # gives us access to read env variables
 
-load_dotenv()
+load_dotenv() # preload env variables
 
-class Config(BaseSettings):
-    ENVIRONMENT:str = os.getenv("ENVIRONMENT")
+class Config:
+    ENVIRONMENT = os.getenv("ENVIRONMENT")
+    DATABASE_USER = os.getenv("DATABASE_USER")
+    DATABASE_PASSWORD = os.getenv("DATABASE_PASSWORD")
+    DATABASE_PORT = int(os.getenv("DATABASE_PORT", "5432"))
+    DB_NAME = os.getenv("DB_NAME")
+    DB_HOST = os.getenv("DB_HOST")
 
-    DATABASE_USER:str = os.getenv("DB_USER")
-    DATABASE_PASSWORD:str = os.getenv("DB_PASSWORD")
-    DATABASE_PORT:int = os.getenv("DB_PORT")
-    DB_NAME: str = os.getenv("DB_NAME")
-    DB_HOST: str = os.getenv("DB_HOST")
+    DB_POOL_SIZE = 16
+    DB_POOL_TTL = 60 * 20
+    DB_POOL_PRE_PING = True
 
-    DB_POOL_SIZE:int = 16 # max number of connections in the pool
-    DB_POOL_TTL:int = 60 * 20 #max amount of time in secs a connection can keep alive before a recycle
-    DB_POOL_PRE_PING:bool = True #connection gets tested before connecting 
-
+    @property
+    def DATABASE_URL(self):
+        return f"postgresql://{self.DATABASE_USER}:{self.DATABASE_PASSWORD}@{self.DB_HOST}:{self.DATABASE_PORT}/{self.DB_NAME}"
+    
+    @property
+    def DATABASE_ASYNC_URL(self):
+        return f"postgresql+asyncpg://{self.DATABASE_USER}:{self.DATABASE_PASSWORD}@{self.DB_HOST}:{self.DATABASE_PORT}/{self.DB_NAME}"
 
 settings = Config()
