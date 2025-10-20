@@ -1,5 +1,7 @@
 from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware # fast api middleware ist direkt als middleware in fastapi accessible 
+from fastapi.middleware.cors import CORSMiddleware
+from user.router import router as user_router
+
 
 app = FastAPI(
     title="FastAPI Project",
@@ -23,6 +25,8 @@ async def root():
 @app.get("/health")
 async def health_check():
     return {"status": "healthy"}
+
+app.include_router(user_router, prefix="/user", tags=["users"])
 
 if __name__ == "__main__":
     import uvicorn
