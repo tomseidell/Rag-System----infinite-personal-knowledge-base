@@ -9,4 +9,4 @@ router = APIRouter()
 
 @router.post("/register", status_code=201, response_model=UserResponse)
 async def register(user:UserRegistration, user_service:UserService = Depends(get_user_service)):
-    return user_service.create_user(user)
+    return await user_service.create_user(user)

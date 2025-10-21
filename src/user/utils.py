@@ -1,12 +1,23 @@
-from passlib.context import CryptContext
+import bcrypt
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto") # deprecated automatically updates / marks old / bad hashs in our application
+def hash_password(password: str) -> str:
+    """Hash a password using bcrypt"""
+    # Convert string to bytes
+    password_bytes = password.encode('utf-8')
+    
+    # Generate salt and hash
+    salt = bcrypt.gensalt()
+    hashed = bcrypt.hashpw(password_bytes, salt)
+    
+    # Return as string
+    return hashed.decode('utf-8')
 
-def hash_password(password:str): # hash password
-    return pwd_context.hash(password)
 
-
-
-
-def verify_passowrd(plain_password: str, hashed_password: str): # checks if plain (entered) and saved pw are the same 
-    return pwd_context.verify(plain_password, hashed_password)
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    """Verify a password against a hash"""
+    # Convert to bytes
+    password_bytes = plain_password.encode('utf-8')
+    hashed_bytes = hashed_password.encode('utf-8')
+    
+    # Verify
+    return bcrypt.checkpw(password_bytes, hashed_bytes)
