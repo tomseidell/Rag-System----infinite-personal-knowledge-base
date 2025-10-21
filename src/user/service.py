@@ -36,6 +36,7 @@ class UserService:
 
         return user
 
+
     async def login_user(self, user:UserLogin) -> User:
         db_user = await self.get_user(user.email)
 

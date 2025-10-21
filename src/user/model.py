@@ -15,6 +15,10 @@ class User(Base):
     hashed_password: Mapped[str] = mapped_column(String)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     is_superuser: Mapped[bool] = mapped_column(Boolean, default=False)
+    interests: Mapped[list[str] | None] = mapped_column(ARRAY(String), nullable=True)
+    notification_enabled: Mapped[bool] = mapped_column(Boolean, default=True)
+    preferred_sources: Mapped[list[str] | None] = mapped_column(ARRAY(String), nullable=True)
+    last_login: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
     updated_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, default=None)
 
