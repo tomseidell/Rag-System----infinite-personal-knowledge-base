@@ -1,41 +1,38 @@
-from fastapi import HTTPException
+from fastapi import Depends, HTTPException
 from pydantic import EmailStr
 from sqlalchemy.ext.asyncio import AsyncSession  # ← AsyncSession!
 from sqlalchemy import select  # ← select statt query!
 from src.user.model import User
 from src.user.schemas import UserLogin, UserRegistration
 from src.user.utils import hash_password, verify_password
+from user.dependencies import get_user_repository
+from user.repository import UserRepository
 
 
 
 class UserService:
-    def __init__(self, db: AsyncSession):
-        self.db = db
+    def __init__(self, user_repository: UserRepository):
+        self.user_repository = user_repository
+
 
     async def create_user(self, user: UserRegistration) -> User: 
+        existing_user = await self.get_user(user.email)
+        if existing_user:
+            raise HTTPException(status_code=409, detail= "Email already registered")
+
         hashed_password = hash_password(user.password)
-        db_user = User(
-            full_name = user.fullname,
-            email = user.email,
-            hashed_password = hashed_password 
-        )
+        return await self.user_repository.create_user(full_name=user.fullname, email=user.email, hashed_password=hashed_password)
 
-        self.db.add(db_user)
-        await self.db.commit()
-        await self.db.refresh(db_user)
 
-        return db_user
-
-    async def get_user(self, email:EmailStr)-> User:
-        stmt = select(User).where(User.email == email)
-        result = await self.db.execute(stmt)
-        user = result.scalar_one_or_none()
+    async def get_user(self, email:EmailStr) -> User:
+        user = await self.user_repository.get_user_by_mail(email)
 
         if not user:
             raise HTTPException(
-                status_code=404,
-                detail="no user with this mail"
+                status_code=401,
+                detail="No user registered with given mail"
         )
+        
 
         return user
 
