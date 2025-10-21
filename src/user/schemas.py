@@ -12,6 +12,6 @@ class UserRegistrationResponse(BaseModel):
     
     id: int
     email: EmailStr
-    fullname: str
+    full_name: str
     is_active: bool
     created_at: datetime

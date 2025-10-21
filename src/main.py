@@ -1,6 +1,13 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from user.router import router as user_router
+import sys
+from pathlib import Path
+
+
+ROOT_DIR = Path(__file__).parent.parent
+sys.path.insert(0, str(ROOT_DIR))
+
+from src.user.router import router as user_router
 
 
 app = FastAPI(
