@@ -7,7 +7,7 @@ class UserRegistration(BaseModel):
     password: str = Field(min_length=8)
 
 
-class UserRegistrationResponse(BaseModel):
+class UserResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     
     id: int
@@ -15,3 +15,8 @@ class UserRegistrationResponse(BaseModel):
     full_name: str
     is_active: bool
     created_at: datetime
+
+
+class UserLogin(BaseModel):
+    email: EmailStr
+    password: str = Field(min_length=8)
