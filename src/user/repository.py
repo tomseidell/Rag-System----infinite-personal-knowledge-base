@@ -1,8 +1,9 @@
+from datetime import datetime
 from fastapi import HTTPException
 from pydantic import EmailStr
 from sqlalchemy.ext.asyncio import AsyncSession
 from user.model import User
-from sqlalchemy import select  
+from sqlalchemy import select, update  
 
 
 class UserRepository:
@@ -29,3 +30,11 @@ class UserRepository:
         user = result.scalar_one_or_none()
 
         return user
+
+
+    async def update_last_login(self, id:int) -> None:
+        stmt = update(User).where(User.id == id).values(
+            last_login = datetime.now()
+        )
+        await self.db.execute(stmt)
+        await self.db.commit()

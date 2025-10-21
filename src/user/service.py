@@ -47,6 +47,7 @@ class UserService:
                 status_code=401,
                 detail="Invalid password"
         )
+        await self.user_repository.update_last_login(db_user.id)
         
         return db_user
         
