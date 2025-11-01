@@ -13,6 +13,7 @@ class User(Base):
     email: Mapped[str] = mapped_column(String, unique=True, index=True)
     full_name: Mapped[str] = mapped_column(String)
     hashed_password: Mapped[str] = mapped_column(String)
+    refresh_token: Mapped[str | None] = mapped_column(String, nullable=True) #jwt refresh token 
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     is_superuser: Mapped[bool] = mapped_column(Boolean, default=False)
     interests: Mapped[list[str] | None] = mapped_column(ARRAY(String), nullable=True)
