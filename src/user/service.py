@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession  # ← AsyncSession!
 from sqlalchemy import select  # ← select statt query!
 from src.user.model import User
 from src.user.schemas import UserLogin, UserRegistration
-from src.user.utils import hash_password, verify_password
+from src.user.utils import create_access_token, create_refresh_token, hash_password, verify_password
 from user.dependencies import get_user_repository
 from user.repository import UserRepository
 
@@ -37,7 +37,7 @@ class UserService:
         return user
 
 
-    async def login_user(self, user:UserLogin) -> User:
+    async def login_user(self, user:UserLogin) -> dict:
         db_user = await self.get_user(user.email)
 
         is_valid = verify_password(user.password, db_user.hashed_password)
@@ -48,8 +48,20 @@ class UserService:
                 detail="Invalid password"
         )
         await self.user_repository.update_last_login(db_user.id)
+
+        access_token = create_access_token(db_user.id)
+        refresh_token = create_refresh_token(db_user.id)
         
-        return db_user
+        return{
+            "access_token": access_token,
+            "refresh_token": refresh_token,
+            "token_type": "bearer",
+            "user": {
+                "id": db_user.id,
+                "email": db_user.email,
+                "full_name": db_user.full_name
+            }
+        }
         
 
 

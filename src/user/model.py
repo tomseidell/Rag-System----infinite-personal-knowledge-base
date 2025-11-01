@@ -17,7 +17,7 @@ class User(Base):
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     is_superuser: Mapped[bool] = mapped_column(Boolean, default=False)
     interests: Mapped[list[str] | None] = mapped_column(ARRAY(String), nullable=True)
-    notification_enabled: Mapped[bool] = mapped_column(Boolean, default=True)
+    notification_enabled: Mapped[bool | None] = mapped_column(Boolean, default=True, nullable=True)
     preferred_sources: Mapped[list[str] | None] = mapped_column(ARRAY(String), nullable=True)
     last_login: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)

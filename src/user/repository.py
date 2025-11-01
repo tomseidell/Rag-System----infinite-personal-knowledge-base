@@ -38,3 +38,8 @@ class UserRepository:
         )
         await self.db.execute(stmt)
         await self.db.commit()
+
+    async def update_refresh_token(self, id:int, token:str) -> None:
+        stmt = update(User).where(User.id == id).values(
+            refresh_token=token
+        )
