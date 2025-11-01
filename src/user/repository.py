@@ -43,3 +43,5 @@ class UserRepository:
         stmt = update(User).where(User.id == id).values(
             refresh_token=token
         )
+        await self.db.execute(stmt)
+        await self.db.commit()
