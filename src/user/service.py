@@ -1,3 +1,4 @@
+from re import S
 from fastapi import Depends, HTTPException
 from pydantic import EmailStr
 from sqlalchemy.ext.asyncio import AsyncSession  # ← AsyncSession!
@@ -16,7 +17,7 @@ class UserService:
 
 
     async def create_user(self, user: UserRegistration) -> User: 
-        existing_user = await self.get_user(user.email)
+        existing_user = await self.get_user_by_mail(user.email)
         if existing_user:
             raise HTTPException(status_code=409, detail= "Email already registered")
 
@@ -24,7 +25,7 @@ class UserService:
         return await self.user_repository.create_user(full_name=user.fullname, email=user.email, hashed_password=hashed_password)
 
 
-    async def get_user(self, email:EmailStr) -> User:
+    async def get_user_by_mail(self, email:EmailStr) -> User:
         user = await self.user_repository.get_user_by_mail(email)
 
         if not user:
@@ -36,9 +37,19 @@ class UserService:
 
         return user
 
+    async def get_user_by_id(self, id:int) -> User:
+        user = await self.user_repository.get_user_by_id(id)
+
+        if not user:
+            raise HTTPException(
+                status_code=401,
+                detail="No user registered with given mail"
+        )
+        return user
+
 
     async def login_user(self, user:UserLogin) -> dict:
-        db_user = await self.get_user(user.email)
+        db_user = await self.get_user_by_mail(user.email)
 
         is_valid = verify_password(user.password, db_user.hashed_password)
 
@@ -51,6 +62,8 @@ class UserService:
 
         access_token = create_access_token(db_user.id)
         refresh_token = create_refresh_token(db_user.id)
+
+        await self.user_repository.update_refresh_token(db_user.id, refresh_token)
         
         return{
             "access_token": access_token,
@@ -64,4 +77,7 @@ class UserService:
         }
         
 
+    async def update_refresh_token(self, id:int, refresh_token:str) ->None:
+
+        await self.user_repository.update_refresh_token(id, refresh_token)
 

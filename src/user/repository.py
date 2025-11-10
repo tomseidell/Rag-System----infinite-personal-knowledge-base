@@ -31,6 +31,13 @@ class UserRepository:
 
         return user
 
+    async def get_user_by_id(self, id:int) -> User:
+        stmt = select(User).where(User.id == id)
+        result = await self.db.execute(stmt)
+        user = result.scalar_one_or_none()
+
+        return user
+
 
     async def update_last_login(self, id:int) -> None:
         stmt = update(User).where(User.id == id).values(
