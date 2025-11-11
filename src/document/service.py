@@ -1,6 +1,6 @@
 from fastapi import HTTPException, UploadFile
-from document.model import Document
-from document.repository import DocumentRepository
+from src.document.model import Document
+from src.document.repository import DocumentRepository
 import hashlib
 
 from storage import get_bucket
@@ -21,7 +21,7 @@ class DocumentService:
 
         if not title:
             title = self._create_title_from_file(filename=file.filename)
-            
+
         source_type = self._get_source_type_from_file(filename=file.filename)
         storage_path = self._upload_to_bucket(content, filename=file.filename, user_id=user_id, content_type=content_type)
         db_document = await self.document_repository.create_document(user_id=user_id, title=title, original_filename=file.filename, storage_path = storage_path, file_size=len(content), file_type=content_type, source_type=source_type, content_hash=content_hash, chunk_count=0)

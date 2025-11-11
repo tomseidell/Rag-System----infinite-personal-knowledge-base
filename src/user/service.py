@@ -6,8 +6,7 @@ from sqlalchemy import select  # ← select statt query!
 from src.user.model import User
 from src.user.schemas import UserLogin, UserRegistration
 from src.user.utils import create_access_token, create_refresh_token, hash_password, verify_password
-from user.dependencies import get_user_repository
-from user.repository import UserRepository
+from src.user.repository import UserRepository
 
 
 

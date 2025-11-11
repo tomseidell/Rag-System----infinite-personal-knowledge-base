@@ -6,7 +6,8 @@ from pathlib import Path
 
 ROOT_DIR = Path(__file__).parent.parent
 sys.path.insert(0, str(ROOT_DIR))
-
+# from src.user.model import User  
+# from src.document.model import Document 
 from src.user.router import router as user_router
 
 
