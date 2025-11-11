@@ -1,4 +1,5 @@
 from datetime import datetime
+from fastapi import UploadFile
 from pydantic import BaseModel, EmailStr, Field, ConfigDict
 
 class DocumentResponse(BaseModel):
@@ -11,6 +12,3 @@ class DocumentResponse(BaseModel):
     file_size: int
     file_type: str
     created_at: datetime
-
-
-
