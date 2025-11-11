@@ -2,8 +2,7 @@ from datetime import datetime
 from fastapi import HTTPException
 from pydantic import EmailStr
 from sqlalchemy.ext.asyncio import AsyncSession
-from document.model import Document
-from user.model import User
+from src.document.model import Document
 from sqlalchemy import select, update  
 
 

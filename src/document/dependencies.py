@@ -1,8 +1,7 @@
 from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession  # ← AsyncSession!
-from document.model import Document
-from document.repository import DocumentRepository
-from document.service import DocumentService
+from src.document.repository import DocumentRepository
+from src.document.service import DocumentService
 from src.database import get_db
 
 from fastapi import Depends

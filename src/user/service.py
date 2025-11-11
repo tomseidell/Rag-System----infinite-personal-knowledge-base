@@ -4,7 +4,7 @@ from pydantic import EmailStr
 from sqlalchemy.ext.asyncio import AsyncSession  # ← AsyncSession!
 from sqlalchemy import select  # ← select statt query!
 from src.user.model import User
-from src.user.schemas import UserLogin, UserRegistration
+from src.user.schemas import TokenResponse, UserLogin, UserRegistration
 from src.user.utils import create_access_token, create_refresh_token, hash_password, verify_password
 from src.user.repository import UserRepository
 
@@ -68,6 +68,7 @@ class UserService:
             "access_token": access_token,
             "refresh_token": refresh_token,
             "token_type": "bearer",
+            "expires_in": 1800,
             "user": {
                 "id": db_user.id,
                 "email": db_user.email,
