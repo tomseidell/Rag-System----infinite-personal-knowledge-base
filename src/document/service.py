@@ -24,11 +24,9 @@ class DocumentService:
         if existing: #do not save document if already existing 
             return existing 
 
-        if not title:
+        if not title: # if no title provided, create title automatically based on filename
             title = self._create_title_from_file(filename=file.filename)
 
-
-    # hier noch checken ob es ein doc mit hash schon gibt
         source_type = self._get_source_type_from_file(filename=file.filename)
         storage_path = self._upload_to_bucket(content, filename=file.filename, user_id=user_id, content_type=content_type)
         db_document = await self.document_repository.create_document(user_id=user_id, title=title, original_filename=file.filename, storage_path = storage_path, file_size=len(content), file_type=content_type, source_type=source_type, content_hash=content_hash, chunk_count=0)
