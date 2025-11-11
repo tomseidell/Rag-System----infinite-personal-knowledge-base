@@ -41,3 +41,10 @@ class DocumentRepository:
         await self.db.refresh(db_document)
         
         return db_document
+
+    
+    async def check_for_existing_hash(self, content_hash:str, user_id:int)->Document:
+        stmt = select(Document).where(Document.content_hash == content_hash, Document.user_id==user_id)
+        result = await self.db.execute(stmt)
+
+        return result.scalar_one_or_none()  

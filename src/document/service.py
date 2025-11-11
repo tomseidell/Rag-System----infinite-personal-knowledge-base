@@ -19,6 +19,11 @@ class DocumentService:
         content_type = file.content_type or "application/octet-stream" # fallback undefined content type
         content_hash = self._calculate_hash(content=content)
 
+        existing = await self.document_repository.check_for_existing_hash(user_id=user_id, content_hash=content_hash)
+
+        if existing: #do not save document if already existing 
+            return existing 
+
         if not title:
             title = self._create_title_from_file(filename=file.filename)
 
