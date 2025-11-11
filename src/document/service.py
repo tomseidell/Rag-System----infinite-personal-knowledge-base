@@ -1,0 +1,52 @@
+from fastapi import HTTPException, UploadFile
+from document.model import Document
+from document.repository import DocumentRepository
+import hashlib
+
+from storage import get_bucket
+
+class DocumentService:
+    def __init__(self, document_repository:DocumentRepository):
+        self.document_repository = document_repository
+
+
+    async def upload_document(self, user_id: int, title: str| None, file:UploadFile,) -> Document:
+        content = await file.read()
+
+        if not file.filename:
+            raise HTTPException(status_code=400, detail="Filename missing")
+        
+        content_type = file.content_type or "application/octet-stream" # fallback undefined content type
+        content_hash = self._calculate_hash(content=content)
+
+        if not title:
+            title = self._create_title_from_file(filename=file.filename)
+            
+        source_type = self._get_source_type_from_file(filename=file.filename)
+        storage_path = self._upload_to_bucket(content, filename=file.filename, user_id=user_id, content_type=content_type)
+        db_document = await self.document_repository.create_document(user_id=user_id, title=title, original_filename=file.filename, storage_path = storage_path, file_size=len(content), file_type=content_type, source_type=source_type, content_hash=content_hash, chunk_count=0)
+
+        return db_document
+
+    def _calculate_hash(self, content:bytes) ->str:
+        hashed_string = hashlib.sha256(content).hexdigest()
+        return hashed_string
+
+    def _create_title_from_file(self, filename) ->str:
+        title=filename.replace(" ", "").split(".")[0] 
+        return title       
+
+    def _get_source_type_from_file(self, filename) ->str:
+        title=filename.replace(" ", "").split(".")[-1] 
+        return title    
+
+    def _upload_to_bucket(self, content:bytes, filename:str, user_id:int, content_type:str) ->str:
+        bucket = get_bucket() # initialize connection to storage 
+        blob_name = f"user_{user_id}/{filename}" # user specific name in storage
+        blob = bucket.blob(blob_name) #create blob reference
+        blob.upload_from_string(content, content_type=content_type) # save blob with given content to bucket 
+
+        return blob_name
+
+
+

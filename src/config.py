@@ -15,6 +15,10 @@ class Config:
     DB_POOL_TTL = 60 * 20
     DB_POOL_PRE_PING = True
 
+    # GCP Bucket information
+    GCS_BUCKET_NAME = os.getenv("GCS_BUCKET_NAME")
+    GOOGLE_APPLICATION_CREDENTIALS = os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
+
     @property
     def DATABASE_URL(self):
         return f"postgresql://{self.DATABASE_USER}:{self.DATABASE_PASSWORD}@{self.DB_HOST}:{self.DATABASE_PORT}/{self.DB_NAME}"
