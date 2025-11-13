@@ -1,9 +1,10 @@
 from datetime import datetime
-from fastapi import HTTPException
 from pydantic import EmailStr
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.exc import SQLAlchemyError
 from src.document.model import Document
-from sqlalchemy import select, update  
+from sqlalchemy import select, update
+from src.core.exceptions import DatabaseException  
 
 
 class DocumentRepository:
@@ -35,16 +36,26 @@ class DocumentRepository:
             source_id=source_id,
             chunk_count=chunk_count
         )
-        
-        self.db.add(db_document)
-        await self.db.commit()
-        await self.db.refresh(db_document)
-        
-        return db_document
+        try:
+            self.db.add(db_document)
+            await self.db.commit()
+            await self.db.refresh(db_document)
+            return db_document
+        except SQLAlchemyError as e:
+            await self.db.rollback()
+            raise DatabaseException(
+                operation="create_document",
+                detail=str(e)
+            )
 
     
-    async def check_for_existing_hash(self, content_hash:str, user_id:int)->Document:
-        stmt = select(Document).where(Document.content_hash == content_hash, Document.user_id==user_id)
-        result = await self.db.execute(stmt)
-
-        return result.scalar_one_or_none()  
+    async def check_for_existing_hash(self, content_hash:str, user_id:int) -> Document | None:
+        try:
+            stmt = select(Document).where(Document.content_hash == content_hash, Document.user_id==user_id)
+            result = await self.db.execute(stmt)
+            return result.scalar_one_or_none() 
+        except SQLAlchemyError as e:
+            raise DatabaseException(
+                operation="check_for_existing_hash",
+                detail=str(e)
+            ) 
