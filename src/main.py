@@ -8,6 +8,7 @@ ROOT_DIR = Path(__file__).parent.parent
 sys.path.insert(0, str(ROOT_DIR))
 # from src.user.model import User  
 # from src.document.model import Document 
+from core.exception_handlers import register_exception_handlers
 from src.user.router import router as user_router
 from src.document.router import router as document_router
 
@@ -26,6 +27,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# add all exception handlers
+register_exception_handlers(app)
 
 @app.get("/")
 async def root():
