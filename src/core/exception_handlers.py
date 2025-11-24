@@ -57,7 +57,7 @@ def register_exception_handlers(app):
         logger.error(f"Database error: {exc.operation} - {exc.detail}")
         return JSONResponse(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            content={"detail": "Ein Datenbankfehler ist aufgetreten"}
+            content={"detail": "A database error occured"}
         )
     
     @app.exception_handler(ValueError)
@@ -73,5 +73,5 @@ def register_exception_handlers(app):
         logger.error(f"Unexpected error: {str(exc)}", exc_info=True)
         return JSONResponse(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            content={"detail": "Ein unerwarteter Fehler ist aufgetreten"}
+            content={"detail": "An error occured"}
         )
