@@ -4,7 +4,6 @@ from pydantic import BaseModel, ConfigDict
 
 class DocumentResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
-    
     id: int
     user_id: int
     title: str
@@ -13,3 +12,16 @@ class DocumentResponse(BaseModel):
     file_type: str
     source_type: str  
     created_at: datetime  
+
+
+class DocumentCreate(BaseModel):
+    user_id: int
+    title: str
+    original_filename: str
+    storage_path: str
+    file_size: int
+    file_type: str
+    source_type: str
+    content_hash: str
+    source_id: str | None
+    chunk_count: int = 0
