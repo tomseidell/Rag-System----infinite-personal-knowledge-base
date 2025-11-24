@@ -46,11 +46,16 @@ class DocumentService:
         return title    
 
     def _upload_to_bucket(self, content:bytes, filename:str, user_id:int, content_type:str) ->str:
-        bucket = get_bucket() # initialize connection to storage 
-        blob_name = f"user_{user_id}/{filename}" # user specific name in storage
-        blob = bucket.blob(blob_name) #create blob reference
-        blob.upload_from_string(content, content_type=content_type) # save blob with given content to bucket 
-
+        try:
+            bucket = get_bucket() # initialize connection to storage 
+            blob_name = f"user_{user_id}/{filename}" # user specific name in storage
+            blob = bucket.blob(blob_name) #create blob reference
+            blob.upload_from_string(content, content_type=content_type) # save blob with given content to bucket 
+        except:
+            raise HTTPException(
+                status_code=500,
+                detail="Internal Server error"
+            )
         return blob_name
 
 
