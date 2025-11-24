@@ -1,7 +1,7 @@
 from fastapi import Request, status
 from fastapi.responses import JSONResponse
 from document.exceptions import DocumentAlreadyExistsException, DocumentNotFoundException
-from src.core.exceptions import DatabaseException
+from src.core.exceptions import DatabaseException, InputError
 
 import logging
 
@@ -11,23 +11,45 @@ logger = logging.getLogger(__name__)
 
 
 def register_exception_handlers(app):
-    
-    @app.exception_handler(DocumentNotFoundException)
-    async def document_not_found_handler(request: Request, exc: DocumentNotFoundException):
-        logger.warning(f"Document not found: {exc.identifier}")
+
+    #general
+    @app.exception_handler(DatabaseException)
+    async def database_error_handler(request: Request, exc: DatabaseException):
+        logger.error(f"Database error: {exc.operation} - {exc.detail}")
         return JSONResponse(
-            status_code=status.HTTP_404_NOT_FOUND,
-            content={"detail": exc.message}
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            content={"detail": "A database error occured"}
         )
     
-    @app.exception_handler(DocumentAlreadyExistsException)
-    async def document_exists_handler(request: Request, exc: DocumentAlreadyExistsException):
-        logger.warning(f"Document already exists: {exc.identifier}")
+    @app.exception_handler(ValueError)
+    async def value_error_handler(request: Request, exc: ValueError):
+        logger.warning(f"Validation error: {str(exc)}")
         return JSONResponse(
-            status_code=status.HTTP_409_CONFLICT,
-            content={"detail": exc.message}
+            status_code=status.HTTP_400_BAD_REQUEST,
+            content={"detail": str(exc)}
         )
     
+    @app.exception_handler(Exception)
+    async def general_exception_handler(request: Request, exc: Exception):
+        logger.error(f"Unexpected error: {str(exc)}", exc_info=True)
+        return JSONResponse(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            content={"detail": "An error occured"}
+        )
+
+    @app.exception_handler(InputError)
+    async def input_exception_handler(request: Request, exc: InputError):
+        logger.error(f"Invalid input in {exc.operation}: {exc.detail}", exc_info=True)
+        return JSONResponse(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            content={
+                "detail": exc.detail,
+                "operation": exc.operation  
+            }
+        )
+
+    
+    #user
     @app.exception_handler(UserNotFoundException)
     async def user_not_found_handler(request: Request, exc: UserNotFoundException):
         logger.warning(f"User not found: {exc.identifier}")
@@ -52,26 +74,22 @@ def register_exception_handlers(app):
             content={"detail": exc.message}
         )
     
-    @app.exception_handler(DatabaseException)
-    async def database_error_handler(request: Request, exc: DatabaseException):
-        logger.error(f"Database error: {exc.operation} - {exc.detail}")
+
+    #document
+    @app.exception_handler(DocumentNotFoundException)
+    async def document_not_found_handler(request: Request, exc: DocumentNotFoundException):
+        logger.warning(f"Document not found: {exc.identifier}")
         return JSONResponse(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            content={"detail": "A database error occured"}
+            status_code=status.HTTP_404_NOT_FOUND,
+            content={"detail": exc.message}
         )
     
-    @app.exception_handler(ValueError)
-    async def value_error_handler(request: Request, exc: ValueError):
-        logger.warning(f"Validation error: {str(exc)}")
+    @app.exception_handler(DocumentAlreadyExistsException)
+    async def document_exists_handler(request: Request, exc: DocumentAlreadyExistsException):
+        logger.warning(f"Document already exists: {exc.identifier}")
         return JSONResponse(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            content={"detail": str(exc)}
+            status_code=status.HTTP_409_CONFLICT,
+            content={"detail": exc.message}
         )
     
-    @app.exception_handler(Exception)
-    async def general_exception_handler(request: Request, exc: Exception):
-        logger.error(f"Unexpected error: {str(exc)}", exc_info=True)
-        return JSONResponse(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            content={"detail": "An error occured"}
-        )
+    
