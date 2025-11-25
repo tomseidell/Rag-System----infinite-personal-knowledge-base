@@ -1,7 +1,7 @@
 from fastapi import Request, status
 from fastapi.responses import JSONResponse
 from document.exceptions import DocumentAlreadyExistsException, DocumentNotFoundException
-from src.core.exceptions import DatabaseException, InputError
+from src.core.exceptions import DatabaseException, InputError, StorageException
 
 import logging
 
@@ -47,6 +47,18 @@ def register_exception_handlers(app):
                 "operation": exc.operation  
             }
         )
+
+    @app.exception_handler(StorageException)
+    async def bucket_exception_handler(request: Request, exc:StorageException):
+        logger.error(
+            f"Bucket error occured in: {exc.operation}",
+            extra={"path": request.url},
+            exc_info=True)
+        return JSONResponse(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            content={"detail": "file upload failed"} 
+        )  
+
 
     
     #user
