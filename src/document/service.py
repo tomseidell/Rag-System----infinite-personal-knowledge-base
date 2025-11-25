@@ -1,19 +1,24 @@
-from fastapi import HTTPException, UploadFile
+import uuid
+from fastapi import UploadFile
 from src.document.model import Document
 from src.document.repository import DocumentRepository
 import hashlib
 from src.document.schemas import DocumentCreate
+from pathlib import Path
+
 
 from src.core.exceptions import InputError
 
-from storage import get_bucket
+from storage.service import StorageService
+
 
 class DocumentService:
-    def __init__(self, document_repository:DocumentRepository):
+    def __init__(self, document_repository:DocumentRepository, storage:StorageService):
         self.document_repository = document_repository
+        self.storage = storage
 
 
-    async def upload_document(self, user_id: int, title: str| None, file:UploadFile,) -> Document:
+    async def upload_document(self, user_id: int, title: str| None, file:UploadFile) -> Document:
         content = await file.read()
 
         if not file.filename:
@@ -33,8 +38,9 @@ class DocumentService:
         if not title: # if no title provided, create title automatically based on filename
             title = self._create_title_from_file(filename=file.filename)
 
-        source_type = self._get_source_type_from_file(filename=file.filename)
-        storage_path = self._upload_to_bucket(content, filename=file.filename, user_id=user_id, content_type=content_type)
+        source_type = self._get_file_extension(filename=file.filename)
+        name = self._generate_unique_filename(filename=file.filename)
+        storage_path = self.storage.upload_file(content, filename=name, user_id=user_id, content_type=content_type)
 
         document = DocumentCreate(
             user_id = user_id,
@@ -59,26 +65,23 @@ class DocumentService:
         hashed_string = hashlib.sha256(content).hexdigest()
         return hashed_string
 
-    def _create_title_from_file(self, filename) ->str:
+    def _create_title_from_file(self, filename:str) ->str:
         title=filename.replace(" ", "").split(".")[0] 
         return title       
 
-    def _get_source_type_from_file(self, filename) ->str:
-        title=filename.replace(" ", "").split(".")[-1] 
-        return title    
+    def _get_file_extension(self, filename:str) ->str:
+        extenstion = filename.replace(" ", "").split(".")[-1] 
+        return extenstion   
 
-    def _upload_to_bucket(self, content:bytes, filename:str, user_id:int, content_type:str) ->str:
-        try:
-            bucket = get_bucket() # initialize connection to storage 
-            blob_name = f"user_{user_id}/{filename}" # user specific name in storage
-            blob = bucket.blob(blob_name) #create blob reference
-            blob.upload_from_string(content, content_type=content_type) # save blob with given content to bucket 
-        except:
-            raise HTTPException(
-                status_code=500,
-                detail="Internal Server error"
-            )
-        return blob_name
+    def _generate_unique_filename(self, filename:str) ->str:
+        path = Path(filename)
+        name = path.stem  # "document"
+        ext = path.suffix  # ".pdf"
+        
+        unique_id = uuid.uuid4()
+        
+        return f"{unique_id}_{name}{ext}" 
+
 
 
 
