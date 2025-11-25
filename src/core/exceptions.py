@@ -12,3 +12,10 @@ class InputError(Exception):
         self.detail = detail
         self.message = f"Input validation error occured in: {self.operation}"
         super().__init__(self.message)
+
+
+class NotFoundException(Exception):
+    def __init__(self, ressource:str):
+        self.ressource = ressource
+        self.message = f"{ressource} not found"
+        super().__init__(self.message)

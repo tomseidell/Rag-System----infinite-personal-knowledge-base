@@ -1,7 +1,7 @@
 from fastapi import Request, status
 from fastapi.responses import JSONResponse
 from document.exceptions import DocumentAlreadyExistsException, DocumentNotFoundException
-from src.core.exceptions import DatabaseException, InputError
+from src.core.exceptions import DatabaseException, InputError, NotFoundException
 from src.storage.exceptions import StorageException
 
 import logging
@@ -60,6 +60,16 @@ def register_exception_handlers(app):
             content={"detail": "file upload failed"} 
         )  
 
+    @app.exception_handler(NotFoundException)
+    async def not_found_exception_handler(request: Request, exc:NotFoundException):
+        logger.error(
+            f"{exc.message}",
+            extra={"path": request.url},
+            exc_info=True)
+        return JSONResponse(
+            status_code=status.HTTP_404_NOT_FOUND,
+            content={"detail": exc.message}
+        )
 
     
     #user

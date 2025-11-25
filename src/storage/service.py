@@ -2,8 +2,9 @@ from fastapi import HTTPException
 from google.cloud import storage
 from src.config import settings
 import logging
-from src.core.exceptions import StorageException
-from google.cloud.exceptions import GoogleCloudError
+from src.storage.exceptions import StorageException
+from google.cloud.exceptions import GoogleCloudError, NotFound
+from src.core.exceptions import NotFoundException
 
 logger = logging.getLogger(__name__)
 
@@ -40,3 +41,35 @@ class StorageService:
         except Exception as e:
             logger.critical(f"Failed to upload file to storage: {e}", exc_info=True)
             raise StorageException(operation="upload_file") from e 
+        
+    def get_file(self, storage_path:str) -> bytes:
+        try:
+            blob = self.bucket.blob(storage_path)
+            return blob.download_as_bytes()
+        except NotFound as e:
+            logger.error(f"Could not find file: {storage_path}", exc_info=True)
+            raise NotFoundException(ressource=f"File: {storage_path}") from e
+        except GoogleCloudError as e:
+            logger.error(f"Google Cloud failed to load file: {storage_path}", exc_info=True)
+            raise StorageException(operation="get_file") from e
+        except Exception as e:
+            logger.critical(f"Failed to get file from storage: {e}", exc_info=True)
+            raise StorageException(operation="get_file") from e 
+
+    def delete_file(self, storage_path:str) -> None:
+        try:
+            blob = self.bucket.blob(storage_path)
+            blob.delete()
+        except NotFound as e:
+            logger.error(f"Could not find file: {storage_path}", exc_info=True)
+            raise NotFoundException(ressource=f"File: {storage_path}") from e
+        except GoogleCloudError as e:
+            logger.error(f"Google Cloud failed to delete file: {storage_path}", exc_info=True)
+            raise StorageException(operation="delete_file") from e
+        except Exception as e:
+            logger.critical(f"Failed to delete file from storage: {e}", exc_info=True)
+            raise StorageException(operation="delete_file") from e 
+
+    def file_exists(self, storage_path:str) ->bool:
+        blob = self.bucket.blob(storage_path)
+        return blob.exists()
