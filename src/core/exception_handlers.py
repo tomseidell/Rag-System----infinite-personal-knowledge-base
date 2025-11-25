@@ -1,7 +1,8 @@
 from fastapi import Request, status
 from fastapi.responses import JSONResponse
 from document.exceptions import DocumentAlreadyExistsException, DocumentNotFoundException
-from src.core.exceptions import DatabaseException, InputError, StorageException
+from src.core.exceptions import DatabaseException, InputError
+from src.storage.exceptions import StorageException
 
 import logging
 
