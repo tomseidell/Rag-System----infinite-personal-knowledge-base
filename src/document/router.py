@@ -30,3 +30,5 @@ async def get_document(
         content=content, # raw bytes
         media_type=content_type, # pdf / png
         headers={"Content-Disposition": f'attachment; filename="{filename}"'}) #asssign attachment to let the browser auto download instead of preview
+
+

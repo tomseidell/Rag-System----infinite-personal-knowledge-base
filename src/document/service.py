@@ -44,6 +44,11 @@ class DocumentService:
 
     async def upload_document(self, user_id: int, title: str| None, file:UploadFile) -> Document:
         content = await file.read()
+        if len(content) >= 10 * 1024 * 1024: #10mb max
+            raise InputError(
+                operation="upload_document",
+                detail= "File is too large"
+            )
 
         if not file.filename:
             raise InputError(
