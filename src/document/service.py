@@ -7,15 +7,39 @@ from src.document.schemas import DocumentCreate
 from pathlib import Path
 
 
-from src.core.exceptions import InputError
+from src.core.exceptions import InputError, NotFoundException
 
-from storage.service import StorageService
+from src.storage.service import StorageService
+from src.user.repository import UserRepository
 
 
 class DocumentService:
-    def __init__(self, document_repository:DocumentRepository, storage:StorageService):
+    def __init__(self, document_repository:DocumentRepository, storage:StorageService, user_repository:UserRepository):
         self.document_repository = document_repository
         self.storage = storage
+        self.user_repository = user_repository
+
+# private methods
+    def _calculate_hash(self, content:bytes) ->str:
+        hashed_string = hashlib.sha256(content).hexdigest()
+        return hashed_string
+
+    def _create_title_from_file(self, filename:str) ->str:
+        title=filename.replace(" ", "").split(".")[0] 
+        return title       
+
+    def _get_file_extension(self, filename:str) ->str:
+        extenstion = filename.replace(" ", "").split(".")[-1] 
+        return extenstion   
+
+    def _generate_unique_filename(self, filename:str) ->str:
+        path = Path(filename)
+        name = path.stem  # "document"
+        ext = path.suffix  # ".pdf"
+        
+        unique_id = uuid.uuid4()
+        
+        return f"{unique_id}_{name}{ext}" 
 
 
     async def upload_document(self, user_id: int, title: str| None, file:UploadFile) -> Document:
@@ -60,28 +84,11 @@ class DocumentService:
         return db_document
 
 
-
-    def _calculate_hash(self, content:bytes) ->str:
-        hashed_string = hashlib.sha256(content).hexdigest()
-        return hashed_string
-
-    def _create_title_from_file(self, filename:str) ->str:
-        title=filename.replace(" ", "").split(".")[0] 
-        return title       
-
-    def _get_file_extension(self, filename:str) ->str:
-        extenstion = filename.replace(" ", "").split(".")[-1] 
-        return extenstion   
-
-    def _generate_unique_filename(self, filename:str) ->str:
-        path = Path(filename)
-        name = path.stem  # "document"
-        ext = path.suffix  # ".pdf"
-        
-        unique_id = uuid.uuid4()
-        
-        return f"{unique_id}_{name}{ext}" 
-
-
+    async def get_document(self, user_id:int, document_id:int) -> tuple[bytes, str, str]:
+        document = await self.document_repository.get_document(user_id=user_id, document_id=document_id)
+        if document is None:
+            raise NotFoundException("document")
+        content = self.storage.get_file(storage_path=document.storage_path)
+        return content, document.original_filename, document.file_type
 
 

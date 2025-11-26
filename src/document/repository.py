@@ -1,5 +1,5 @@
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.exc import SQLAlchemyError, NoResultFound
 from src.document.model import Document
 from sqlalchemy import select, update
 from src.core.exceptions import DatabaseException  
@@ -33,5 +33,16 @@ class DocumentRepository:
         except SQLAlchemyError as e:
             raise DatabaseException(
                 operation="check_for_existing_hash",
+                detail=str(e)
+            ) 
+        
+    async def get_document(self, user_id:int, document_id:int) -> Document | None:
+        try:
+            stmt = select(Document).where(Document.id == document_id, Document.user_id == user_id)
+            result = await self.db.execute(stmt)
+            return result.scalar_one_or_none()
+        except SQLAlchemyError as e:
+            raise DatabaseException(
+                operation="get_document",
                 detail=str(e)
             ) 
