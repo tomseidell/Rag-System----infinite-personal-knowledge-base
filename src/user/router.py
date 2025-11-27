@@ -17,7 +17,7 @@ async def register(user:UserRegistration, user_service:UserService = Depends(get
 async def login(user:UserLogin, user_service:UserService = Depends(get_user_service)):
     return await user_service.login_user(user)
 
-@router.post("/refresh")
+@router.post("/refresh", status_code=200, response_model=TokenResponse)
 async def refresh(refresh_token:str, user_service:UserService = Depends(get_user_service)):
     user_id = decode_refresh_token(refresh_token)
 
