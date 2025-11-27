@@ -3,7 +3,7 @@ from fastapi import UploadFile
 from src.document.model import Document
 from src.document.repository import DocumentRepository
 import hashlib
-from src.document.schemas import DocumentCreate
+from src.document.schemas import DocumentCreate, GetDocuments
 from pathlib import Path
 
 
@@ -40,6 +40,7 @@ class DocumentService:
         unique_id = uuid.uuid4()
         
         return f"{unique_id}_{name}{ext}" 
+
 
 
     async def upload_document(self, user_id: int, title: str| None, file:UploadFile) -> Document:
@@ -88,7 +89,6 @@ class DocumentService:
 
         return db_document
 
-
     async def get_document(self, user_id:int, document_id:int) -> tuple[bytes, str, str]:
         document = await self.document_repository.get_document(user_id=user_id, document_id=document_id)
         if document is None:
@@ -96,10 +96,12 @@ class DocumentService:
         content = self.storage.get_file(storage_path=document.storage_path)
         return content, document.original_filename, document.file_type
 
-
-    async def delete_document(self, user_id:int, document_id:int) ->bool:
+    async def delete_document(self, user_id:int, document_id:int) ->None:
         document = await self.document_repository.delete_document(user_id=user_id, document_id=document_id)
         if document is None:
             raise NotFoundException("document")
         self.storage.delete_file(document.storage_path)
-        return True
+
+    async def get_documents(self, user_id:int, cursor:int | None)-> tuple[list[Document], int | None]:
+        result = await self.document_repository.get_documents(user_id, cursor)
+        return result

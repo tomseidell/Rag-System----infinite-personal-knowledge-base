@@ -1,5 +1,7 @@
 from datetime import datetime
 from pydantic import BaseModel, ConfigDict
+from src.document.model import Document
+
 
 
 class DocumentResponse(BaseModel):
@@ -25,3 +27,8 @@ class DocumentCreate(BaseModel):
     content_hash: str
     source_id: str | None
     chunk_count: int = 0
+
+
+class GetDocuments(BaseModel):
+    documents: list[DocumentResponse]
+    next_cursor: int| None

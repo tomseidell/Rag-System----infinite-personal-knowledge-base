@@ -3,7 +3,7 @@ from sqlalchemy.exc import SQLAlchemyError, NoResultFound
 from src.document.model import Document
 from sqlalchemy import select, update, delete
 from src.core.exceptions import DatabaseException, NotFoundException  
-from src.document.schemas import DocumentCreate
+from src.document.schemas import DocumentCreate, GetDocuments
 
 
 class DocumentRepository:
@@ -60,3 +60,35 @@ class DocumentRepository:
                 operation="delete_document",
                 detail=str(e)
             ) 
+        
+
+    async def get_documents(self, user_id: int,cursor: int | None = None,limit: int = 20) -> tuple[list[Document], int | None]:
+        try:
+            stmt = (
+                select(Document)
+                .where(Document.user_id == user_id)
+                .order_by(Document.id.desc())
+            )
+            
+            if cursor:
+                stmt = stmt.where(Document.id < cursor) # smaller => more in the past 
+            
+            stmt = stmt.limit(limit + 1)  # fetch one extra for infinite fetch 
+            
+            result = await self.db.execute(stmt)
+            documents = list(result.scalars().all()) # convert to list to ensure type safety 
+            
+            has_more = len(documents) > limit
+            if has_more:
+                documents = documents[:limit]  # Remove extra
+                next_cursor = documents[-1].id  # Last doc ID
+            else:
+                next_cursor = None
+            
+            return documents, next_cursor
+            
+        except SQLAlchemyError as e:
+            raise DatabaseException(
+                operation="get_documents",
+                detail=str(e)
+            )

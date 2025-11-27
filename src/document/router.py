@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, Response
 
 from src.document.dependencies import get_document_service
-from src.document.schemas import DocumentResponse
+from src.document.schemas import DocumentResponse, GetDocuments
 from src.document.service import DocumentService
 from src.user.dependencies import get_current_user_id
 from src.user.model import User
@@ -32,11 +32,23 @@ async def get_document(
         headers={"Content-Disposition": f'attachment; filename="{filename}"'}) #asssign attachment to let the browser auto download instead of preview
 
 
-@router.delete("/{document_id}", status_code=200)
+@router.delete("/{document_id}", status_code=204)
 async def delete(
     document_id:int,
     current_user: int = Depends(get_current_user_id),
     document_service:DocumentService = Depends(get_document_service)
     ):
-    print("test")
-    return await document_service.delete_document(document_id=document_id, user_id=current_user)
+    await document_service.delete_document(document_id=document_id, user_id=current_user)
+
+
+@router.get("/", status_code=200, response_model=GetDocuments)
+async def get_documents(
+    cursor:int | None = None,
+    current_user: int = Depends(get_current_user_id),
+    document_service:DocumentService = Depends(get_document_service)
+    ):
+    documents, next_cursor = await document_service.get_documents(user_id=current_user, cursor=cursor)
+    return {
+        "documents": documents,
+        "next_cursor": next_cursor
+    }
