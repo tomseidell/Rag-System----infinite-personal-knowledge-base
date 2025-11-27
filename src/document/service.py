@@ -97,3 +97,9 @@ class DocumentService:
         return content, document.original_filename, document.file_type
 
 
+    async def delete_document(self, user_id:int, document_id:int) ->bool:
+        document = await self.document_repository.delete_document(user_id=user_id, document_id=document_id)
+        if document is None:
+            raise NotFoundException("document")
+        self.storage.delete_file(document.storage_path)
+        return True

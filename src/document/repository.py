@@ -1,8 +1,8 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import SQLAlchemyError, NoResultFound
 from src.document.model import Document
-from sqlalchemy import select, update
-from src.core.exceptions import DatabaseException  
+from sqlalchemy import select, update, delete
+from src.core.exceptions import DatabaseException, NotFoundException  
 from src.document.schemas import DocumentCreate
 
 
@@ -44,5 +44,19 @@ class DocumentRepository:
         except SQLAlchemyError as e:
             raise DatabaseException(
                 operation="get_document",
+                detail=str(e)
+            ) 
+        
+    async def delete_document(self, user_id:int, document_id:int) -> Document | None:
+        try:
+            document = await self.get_document(user_id=user_id, document_id=document_id)
+            if document:
+                stmt = delete(Document).where(Document.id == document_id, Document.user_id == user_id)
+                await self.db.execute(stmt)
+                await self.db.commit()
+            return document
+        except SQLAlchemyError as e:
+            raise DatabaseException(
+                operation="delete_document",
                 detail=str(e)
             ) 

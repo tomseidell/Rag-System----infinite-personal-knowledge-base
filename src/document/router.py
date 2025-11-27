@@ -19,7 +19,7 @@ async def upload(
     return await document_service.upload_document(user_id=current_user, title=title, file=file)
  
 
-@router.get("/{document_id}/download", status_code=200, response_model=bytes)
+@router.get("/{document_id}/download", status_code=200)
 async def get_document(
     document_id:int,
     current_user: int = Depends(get_current_user_id),
@@ -32,3 +32,11 @@ async def get_document(
         headers={"Content-Disposition": f'attachment; filename="{filename}"'}) #asssign attachment to let the browser auto download instead of preview
 
 
+@router.delete("/{document_id}", status_code=200)
+async def delete(
+    document_id:int,
+    current_user: int = Depends(get_current_user_id),
+    document_service:DocumentService = Depends(get_document_service)
+    ):
+    print("test")
+    return await document_service.delete_document(document_id=document_id, user_id=current_user)
