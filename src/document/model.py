@@ -20,12 +20,12 @@ class Document(Base):
 
     source_type: Mapped[str] = mapped_column(String)
     source_id: Mapped[str | None] = mapped_column(String, nullable=True)
+    content_hash: Mapped[str] = mapped_column(String) # unique identifier of document
 
     #RAG information
 
     chunk_count: Mapped[int] = mapped_column(Integer)
-    content_hash: Mapped[str] = mapped_column(String)
-    indexed_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
+    indexed_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now) # timestamps for embeddings
 
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
 
