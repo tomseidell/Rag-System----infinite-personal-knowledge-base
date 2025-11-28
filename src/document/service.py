@@ -12,6 +12,8 @@ from src.core.exceptions import InputError, NotFoundException
 from src.storage.service import StorageService
 from src.user.repository import UserRepository
 
+from src.document.utils import extract_text_from_pdf
+
 
 class DocumentService:
     def __init__(self, document_repository:DocumentRepository, storage:StorageService, user_repository:UserRepository):
@@ -44,7 +46,7 @@ class DocumentService:
 
 
     async def upload_document(self, user_id: int, title: str| None, file:UploadFile) -> Document:
-        content = await file.read()
+        content = await file.read()#bytes
         if len(content) >= 10 * 1024 * 1024: #10mb max
             raise InputError(
                 operation="upload_document",
@@ -70,6 +72,17 @@ class DocumentService:
 
         source_type = self._get_file_extension(filename=file.filename)
         name = self._generate_unique_filename(filename=file.filename)
+
+        if source_type != "pdf":
+            raise InputError(
+                operation="upload_document",
+                detail="inserted file is not pdf"
+            )
+        
+        content_string = extract_text_from_pdf(content=content)
+
+        print("content: ",content_string)
+
         storage_path = self.storage.upload_file(content, filename=name, user_id=user_id, content_type=content_type)
 
         document = DocumentCreate(
