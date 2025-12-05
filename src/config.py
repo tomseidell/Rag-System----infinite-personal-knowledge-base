@@ -1,23 +1,23 @@
-from dotenv import load_dotenv  # preload env variables
-import os # gives us access to read env variables
+from pathlib import Path
 
-load_dotenv() # preload env variables
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
-class Config:
-    ENVIRONMENT = os.getenv("ENVIRONMENT")
-    DATABASE_USER = os.getenv("DATABASE_USER")
-    DATABASE_PASSWORD = os.getenv("DATABASE_PASSWORD")
-    DATABASE_PORT = int(os.getenv("DATABASE_PORT", "5432"))
-    DB_NAME = os.getenv("DB_NAME")
-    DB_HOST = os.getenv("DB_HOST")
+DOTENV = Path(__file__).parent.parent / ".env"
 
-    DB_POOL_SIZE = 16
-    DB_POOL_TTL = 60 * 20
-    DB_POOL_PRE_PING = True
+class Settings(BaseSettings):
+    ENVIRONMENT: str
+    DATABASE_USER: str
+    DATABASE_PASSWORD: str
+    DATABASE_PORT: int
+    DB_NAME: str
+    DB_HOST: str
 
-    # GCP Bucket information
-    GCS_BUCKET_NAME = os.getenv("GCS_BUCKET_NAME")
-    GOOGLE_APPLICATION_CREDENTIALS = os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
+    DB_POOL_SIZE:int = 16
+    DB_POOL_TTL:int = 60 * 20
+    DB_POOL_PRE_PING:bool = True
+
+    GCS_BUCKET_NAME: str
+    GOOGLE_APPLICATION_CREDENTIALS: str
 
     @property
     def DATABASE_URL(self):
@@ -27,4 +27,8 @@ class Config:
     def DATABASE_ASYNC_URL(self):
         return f"postgresql+asyncpg://{self.DATABASE_USER}:{self.DATABASE_PASSWORD}@{self.DB_HOST}:{self.DATABASE_PORT}/{self.DB_NAME}"
 
-settings = Config()
+    model_config = SettingsConfigDict(env_file=DOTENV, extra="ignore")  
+
+
+
+settings = Settings()
