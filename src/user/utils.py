@@ -1,13 +1,8 @@
 import bcrypt
-import os # gives us access to read env variables
 from datetime import datetime, timedelta, timezone 
 from fastapi import HTTPException
 import jwt
-
-SECRET_KEY = os.getenv("JWT_SECRET")
-ALGORITHM = os.getenv("ALGORITHM", "HS256")  # ← Default-Wert
-ACCESS_TOKEN_EXPIRE_MINUTES: int = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "30"))
-REFRESH_TOKEN_EXPIRE_DAYS: int = int(os.getenv("REFRESH_TOKEN_EXPIRE_DAYS", "30"))
+from src.config import settings
 
 
 
@@ -36,11 +31,10 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 
 
 # jwt 
-
 def create_access_token(user_id:int) -> str:
     """creates jwt access token based on userId"""
 
-    expire = datetime.now(timezone.utc) + timedelta(minutes = ACCESS_TOKEN_EXPIRE_MINUTES)
+    expire = datetime.now(timezone.utc) + timedelta(minutes = settings.ACCESS_TOKEN_EXPIRE_MINUTES)
 
     payload = {
         "user_id":user_id,
@@ -48,14 +42,14 @@ def create_access_token(user_id:int) -> str:
         "type":"access"
     }
 
-    token = jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
+    token = jwt.encode(payload, settings.JWT_SECRET, algorithm=settings.ALGORITHM)
 
     return token 
 
 
 def create_refresh_token(user_id:int) -> str:
     """creates jwt access token based on userId"""
-    expire = datetime.now(timezone.utc) + timedelta(days = REFRESH_TOKEN_EXPIRE_DAYS)
+    expire = datetime.now(timezone.utc) + timedelta(minutes = settings.REFRESH_TOKEN_EXPIRE_MINUTES)
 
     payload = {
         "user_id":user_id,
@@ -63,14 +57,14 @@ def create_refresh_token(user_id:int) -> str:
         "type":"refresh"
     }
 
-    token = jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
+    token = jwt.encode(payload, settings.JWT_SECRET, algorithm=settings.ALGORITHM)
 
     return token 
 
 
 def decode_access_token(token:str) -> int:
     try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        payload = jwt.decode(token, settings.JWT_SECRET, algorithms=[settings.ALGORITHM])
         if payload.get("type") != "access":
             raise HTTPException(401, "wrong token type")
         return payload["user_id"] 
@@ -80,7 +74,7 @@ def decode_access_token(token:str) -> int:
 
 def decode_refresh_token(token:str) ->int:
     try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        payload = jwt.decode(token, settings.JWT_SECRET, algorithms=[settings.ALGORITHM])
         if payload.get("type") != "refresh":
             raise HTTPException(401, "wrong token type")
         return payload["user_id"]

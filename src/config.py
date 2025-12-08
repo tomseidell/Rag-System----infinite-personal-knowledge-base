@@ -19,6 +19,11 @@ class Settings(BaseSettings):
     GCS_BUCKET_NAME: str
     GOOGLE_APPLICATION_CREDENTIALS: str
 
+    JWT_SECRET: str
+    ALGORITHM: str = "HS256"
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
+    REFRESH_TOKEN_EXPIRE_MINUTES: int = 43200  # 30 days in minutes
+
     @property
     def DATABASE_URL(self):
         return f"postgresql://{self.DATABASE_USER}:{self.DATABASE_PASSWORD}@{self.DB_HOST}:{self.DATABASE_PORT}/{self.DB_NAME}"

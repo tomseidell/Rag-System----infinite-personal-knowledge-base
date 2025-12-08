@@ -44,5 +44,5 @@ app.include_router(user_router, prefix="/user", tags=["users"])
 app.include_router(document_router, prefix="/document", tags=["documents"])
 
 if __name__ == "__main__":
-    import uvicorn
+    import uvicorn # webserser
     uvicorn.run(app, host="0.0.0.0", port=8000) # when we start python environment locally with main.py, this function gets called and starts the server
