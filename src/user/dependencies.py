@@ -6,7 +6,7 @@ from src.user.service import UserService
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
-from user.utils import decode_access_token
+from src.user.utils import decode_access_token
 
 
 def get_user_repository(db: AsyncSession = Depends(get_db)) -> UserRepository:

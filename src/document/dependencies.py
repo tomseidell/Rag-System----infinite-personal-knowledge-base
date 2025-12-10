@@ -7,7 +7,7 @@ from src.database import get_db
 
 from fastapi import Depends
 
-from storage.service import StorageService
+from src.storage.service import StorageService
 from src.storage.dependencies import get_storage_service
 from src.user.dependencies import get_user_repository
 

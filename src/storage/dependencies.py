@@ -1,4 +1,4 @@
-from storage.service import StorageService
+from src.storage.service import StorageService
 from functools import lru_cache
 
 

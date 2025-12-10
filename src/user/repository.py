@@ -2,7 +2,7 @@ from datetime import datetime
 from pydantic import EmailStr
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
-from core.exceptions import DatabaseException
+from src.core.exceptions import DatabaseException
 from src.user.model import User
 from sqlalchemy import select, update  
 
