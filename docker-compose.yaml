@@ -23,10 +23,10 @@ services:
         - redis
         - db
       env_file:
-        - .env                                    # ← NEU! (für DB-Zugriff)
+        - .env                                  
       environment:
         - CELERY_BROKER_URL=redis://redis:6379
-      command: celery -A src.document.workers.pdf_worker worker --loglevel=info
+      command: celery -A src.document.workers.pdf_reader worker --loglevel=info
     db:
       image: postgres:15-alpine
       environment:
@@ -37,6 +37,15 @@ services:
         - "5432:5432"
       volumes:
         - postgres_data:/var/lib/postgresql/data  
+    pgadmin:
+      image: dpage/pgadmin4
+      environment:
+        PGADMIN_DEFAULT_EMAIL: admin@admin.com
+        PGADMIN_DEFAULT_PASSWORD: admin
+      ports:
+        - "5050:80"
+      depends_on:
+        - db
 
 volumes:
   postgres_data:                                  
