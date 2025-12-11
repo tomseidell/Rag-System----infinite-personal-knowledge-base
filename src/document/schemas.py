@@ -20,14 +20,10 @@ class DocumentCreate(BaseModel):
     user_id: int
     title: str
     original_filename: str
-    storage_path: str
-    file_size: int
-    file_type: str
     source_type: str
     content_hash: str
-    source_id: str | None
-    chunk_count: int = 0
-
+    file_size: int
+    file_type: str
 
 class GetDocuments(BaseModel):
     documents: list[DocumentResponse]
