@@ -11,6 +11,9 @@ services:
         - .:/app
       depends_on:
         - redis
+        - db
+      env_file:
+        - .env   
       environment:
         - CELERY_BROKER_URL=redis://redis:6379
       command: uvicorn src.main:app --host 0.0.0.0 --port 8000 --reload
@@ -18,9 +21,12 @@ services:
       build: .
       depends_on:
         - redis
+        - db
+      env_file:
+        - .env                                    # ← NEU! (für DB-Zugriff)
       environment:
         - CELERY_BROKER_URL=redis://redis:6379
-      command: celery -A src.document.workers.pdf_reader worker --loglevel=info
+      command: celery -A src.document.workers.pdf_worker worker --loglevel=info
     db:
       image: postgres:15-alpine
       environment:
@@ -30,4 +36,7 @@ services:
       ports:
         - "5432:5432"
       volumes:
-        - postgres_data:/var/lib/postgresql/data
+        - postgres_data:/var/lib/postgresql/data  
+
+volumes:
+  postgres_data:                                  
