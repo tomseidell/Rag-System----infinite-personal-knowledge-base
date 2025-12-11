@@ -14,18 +14,20 @@ class Document(Base):
 
     title: Mapped[str] = mapped_column(String)
     original_filename: Mapped[str] = mapped_column(String)
-    storage_path: Mapped[str] = mapped_column(String)
+    storage_path: Mapped[str] = mapped_column(String, nullable=True)
     file_size: Mapped[int] = mapped_column(Integer)
     file_type: Mapped[str] = mapped_column(String)
 
     source_type: Mapped[str] = mapped_column(String)
     source_id: Mapped[str | None] = mapped_column(String, nullable=True)
-    content_hash: Mapped[str] = mapped_column(String) # unique identifier of document
+    content_hash: Mapped[str] = mapped_column(String, unique=True) # unique identifier of document
 
-    #RAG information
+    status: Mapped[str] = mapped_column(String, default="processing")
 
-    chunk_count: Mapped[int] = mapped_column(Integer)
-    indexed_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now) # timestamps for embeddings
+    #Vector information
+
+    chunk_count: Mapped[int] = mapped_column(Integer, default = 0)
+    indexed_at: Mapped[datetime | None] = mapped_column(DateTime, default=datetime.now, nullable=True) # timestamps for embeddings
 
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
 
