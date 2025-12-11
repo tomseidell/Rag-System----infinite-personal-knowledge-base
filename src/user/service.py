@@ -26,14 +26,6 @@ class UserService:
 
     async def get_user_by_mail(self, email:EmailStr) -> User:
         user = await self.user_repository.get_user_by_mail(email)
-
-        if not user:
-            raise HTTPException(
-                status_code=401,
-                detail="No user registered with given mail"
-        )
-        
-
         return user
 
     async def get_user_by_id(self, id:int) -> User:
