@@ -5,4 +5,3 @@ class ChunkCreate(BaseModel):
     document_id:int = Field(gt=0)
     user_id:int = Field(gt=0)
     chunk_index:int = Field(gt=0)
-    token_count:int = Field(gt=1)
