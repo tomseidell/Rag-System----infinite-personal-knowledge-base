@@ -12,7 +12,10 @@ from src.core.exceptions import InputError, NotFoundException
 from src.storage.service import StorageService
 from src.user.repository import UserRepository
 
-from src.document.utils import extract_text_from_pdf
+from src.document.workers.pdf_reader import process_document
+
+import base64
+
 
 
 class DocumentService:
@@ -78,27 +81,24 @@ class DocumentService:
                 operation="upload_document",
                 detail="inserted file is not pdf"
             )
-        
-        content_string = extract_text_from_pdf(content=content)
-
-        print("content: ",content_string)
-
-        storage_path = self.storage.upload_file(content, filename=name, user_id=user_id, content_type=content_type)
 
         document = DocumentCreate(
             user_id = user_id,
             title = title,
             original_filename = file.filename,
-            storage_path = storage_path,
+            #storage_path = storage_path,
             file_size=len(content),
             file_type=content_type,
             source_type=source_type,
             content_hash=content_hash,
-            source_id=None,
-            chunk_count=0
+            #source_id=None,
+            #chunk_count=0
         )
 
         db_document = await self.document_repository.create_document(document)
+
+        encoded_content = base64.b64encode(content).decode('utf-8')
+        process_document.delay(content=encoded_content, document_id=db_document.id, user_id = user_id, filename=name, content_type=content_type)
 
         return db_document
 
