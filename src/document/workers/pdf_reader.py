@@ -112,6 +112,7 @@ def process_document(content:bytes, document_id:int, user_id:int, filename:str, 
         
         document.status= "completed"
         document.storage_path = storage_path
+        document.chunk_count = len(points)
         db.commit()
 
     except Exception as e:
