@@ -16,17 +16,25 @@ services:
         - .env   
       environment:
         - CELERY_BROKER_URL=redis://redis:6379
+        - CELERY_RESULT_BACKEND=redis://redis:6379  
       command: uvicorn src.main:app --host 0.0.0.0 --port 8000 --reload
     worker:
       build: .
       depends_on:
         - redis
         - db
+        - vector
       env_file:
         - .env                                  
       environment:
         - CELERY_BROKER_URL=redis://redis:6379
-      command: celery -A src.document.workers.pdf_reader worker --loglevel=info
+        - CELERY_RESULT_BACKEND=redis://redis:6379  
+        - OLLAMA_HOST=http://host.docker.internal:11434
+        - QDRANT_URL=http://vector:6333
+
+      volumes:
+      - .:/app
+      command: celery -A src.core.celery_app worker --loglevel=info --queues=documents
     db:
       image: postgres:15-alpine
       environment:
@@ -42,10 +50,15 @@ services:
       environment:
         PGADMIN_DEFAULT_EMAIL: admin@admin.com
         PGADMIN_DEFAULT_PASSWORD: admin
+        PGADMIN_CONFIG_SERVER_MODE: 'False'
+        PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: 'False'
       ports:
         - "5050:80"
       depends_on:
         - db
+      volumes:
+        - pgadmin_data:/var/lib/pgadmin 
+        - ./pgadmin-servers.json:/pgadmin4/servers.json  
     vector:
       image: "qdrant/qdrant:latest"
       ports:
@@ -55,4 +68,6 @@ services:
         - qdrant_data:/qdrant/storage 
 volumes:
   postgres_data: 
-  qdrant_data:                                 
+  qdrant_data:     
+  pgadmin_data:  
+                            
