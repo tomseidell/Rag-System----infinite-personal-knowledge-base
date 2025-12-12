@@ -25,7 +25,7 @@ Base = declarative_base() # parent class of all db models
 
 sync_database_url = f"postgresql+psycopg2://{settings.DATABASE_USER}:{settings.DATABASE_PASSWORD}@{settings.DB_HOST}:{settings.DATABASE_PORT}/{settings.DB_NAME}"
 
-sync_engine = create_engine(database_url)
+sync_engine = create_engine(sync_database_url)
 SyncSessionLocal = sessionmaker(
     bind = sync_engine,
     autocommit=False,
