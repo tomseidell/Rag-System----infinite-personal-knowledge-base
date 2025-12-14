@@ -32,6 +32,7 @@ def process_document(content:bytes, document_id:int, user_id:int, filename:str, 
     db = SyncSessionLocal()
     storage_service = StorageService()
     client = QdrantClient(url=os.getenv("QDRANT_URL", "http://localhost:6333"))
+    chunk_repo = SyncChunkRepository(db)
 
 
     try:
@@ -40,14 +41,12 @@ def process_document(content:bytes, document_id:int, user_id:int, filename:str, 
         client.create_collection(
             collection_name="second_brain",
             vectors_config=VectorParams(size=768, distance=Distance.COSINE)
-            # nomic-embed-text hat 768 Dimensionen
         )
 
     storage_path = None
     chunk_ids = []
 
     try:
-        chunk_repo = SyncChunkRepository(db)
         reader = PdfReader(BytesIO(content_bytes)) # create new file with BytesIO wrapper => keeps file properties like read
         pages = []
         for page in reader.pages:
