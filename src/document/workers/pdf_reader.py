@@ -4,13 +4,10 @@ from src.user.model import User
 
 from PyPDF2 import PdfReader
 from io import BytesIO
-from celery import Celery
 import os 
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 import ollama
-from src.chunk.schemas import ChunkCreate
 from src.database import SyncSessionLocal
-from src.chunk.repository import SyncChunkRepository
 from qdrant_client import QdrantClient
 from qdrant_client.models import PointStruct
 from src.storage.service import StorageService
@@ -32,8 +29,6 @@ def process_document(content:bytes, document_id:int, user_id:int, filename:str, 
     db = SyncSessionLocal()
     storage_service = StorageService()
     client = QdrantClient(url=os.getenv("QDRANT_URL", "http://localhost:6333"))
-    chunk_repo = SyncChunkRepository(db)
-
 
     try:
         client.get_collection("second_brain")
@@ -71,24 +66,33 @@ def process_document(content:bytes, document_id:int, user_id:int, filename:str, 
         embeddings = response["embeddings"]
 
         points = []
+        chunk_objects : list[Chunk] = []
 
-        text_with_vector = zip(chunks, embeddings)
 
-        for i, pair in enumerate(text_with_vector, start=1): #enumerate = text + index (i + pair)
-            chunk_text, vector = pair
+        for i, chunk in enumerate(chunks, start=1): #enumerate = text + index (i + pair)
 
-            chunk_data = ChunkCreate( # create chunk for db 
-                document_id= document_id,
-                text= chunk_text,
-                chunk_index = i,
-                user_id = user_id
-            )
+            chunk_objects.append(Chunk(
+                text=chunk,
+                document_id=document_id,
+                chunk_index=i,
+                user_id=user_id  
+            ))
 
-            chunk = chunk_repo.create_chunk(chunk_data)
-            chunk_ids.append(chunk.id)
+        db.add_all(chunk_objects)
+        db.flush()
 
-            points.append(PointStruct(id = chunk.id, vector=vector, payload={"user_id":user_id, "document_id":document_id, "content": chunk_text}))
-            
+        for chunk_obj, vector in zip(chunk_objects, embeddings):
+            points.append(PointStruct(
+                id = chunk_obj.id,
+                vector=vector,
+                payload={"user_id":user_id,
+                          "document_id":document_id,
+                          "content": chunk_obj.text
+                         }
+                ))
+            chunk_ids.append(chunk_obj.id)
+
+
 
         operation = client.upsert(
             collection_name= "second_brain",
