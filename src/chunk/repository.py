@@ -4,8 +4,6 @@ from sqlalchemy.exc import SQLAlchemyError
 from src.core.exceptions import DatabaseException
 from src.chunk.schemas import ChunkCreate
 from sqlalchemy import select
-from sqlalchemy.orm import Session
-import logging
 
 
 class ChunkRepository:
@@ -55,27 +53,4 @@ class ChunkRepository:
                 operation="get chunks for document",
                 detail= str(e)
             )
-        
-class SyncChunkRepository:
-    def __init__(self, db : Session):
-        self.db = db
-
-    def create_chunk(self, chunk:ChunkCreate) -> Chunk:
-        try:
-            chunk_obj = Chunk(
-                text = chunk.text,
-                document_id = chunk.document_id,
-                user_id = chunk.user_id,
-                chunk_index = chunk.chunk_index,
-            )
-            self.db.add(chunk_obj)
-            self.db.flush()
-            return chunk_obj
-        except SQLAlchemyError as e:
-            self.db.rollback() 
-            logging.error(f"DB Error in create_chunk: {e}") 
-            raise DatabaseException(
-                operation="create_chunk",
-                detail= str(e)
-            )
-        
+    
