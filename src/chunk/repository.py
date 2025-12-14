@@ -69,8 +69,7 @@ class SyncChunkRepository:
                 chunk_index = chunk.chunk_index,
             )
             self.db.add(chunk_obj)
-            self.db.commit()
-            self.db.refresh(chunk_obj)
+            self.db.flush()
             return chunk_obj
         except SQLAlchemyError as e:
             self.db.rollback() 
