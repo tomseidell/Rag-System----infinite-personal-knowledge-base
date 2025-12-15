@@ -3,7 +3,8 @@ from sqlalchemy.exc import SQLAlchemyError, NoResultFound
 from sqlalchemy.orm import Session
 from src.modules.document.model import Document
 from sqlalchemy import select, update, delete
-from src.core.exceptions import DatabaseException, NotFoundException  
+from src.core.exceptions import DatabaseException, NotFoundException 
+from src.modules.document.exceptions import DocumentNotFoundException, DocumentAlreadyExistsException 
 from src.modules.document.schemas import DocumentCreate, GetDocuments
 
 
@@ -25,7 +26,6 @@ class DocumentRepository:
                 detail=str(e)
             )
 
-    
     async def check_for_existing_hash(self, content_hash:str, user_id:int) -> Document | None:
         try:
             stmt = select(Document).where(Document.content_hash == content_hash, Document.user_id==user_id)
@@ -51,18 +51,23 @@ class DocumentRepository:
     async def delete_document(self, user_id:int, document_id:int) -> Document | None:
         try:
             document = await self.get_document(user_id=user_id, document_id=document_id)
+
+            if not document:
+                raise DocumentNotFoundException(identifier=str(document_id))
             if document:
                 stmt = delete(Document).where(Document.id == document_id, Document.user_id == user_id)
                 await self.db.execute(stmt)
                 await self.db.commit()
             return document
+        
+
+
         except SQLAlchemyError as e:
             raise DatabaseException(
                 operation="delete_document",
                 detail=str(e)
             ) 
         
-
     async def get_documents(self, user_id: int,cursor: int | None = None,limit: int = 20) -> tuple[list[Document], int | None]:
         try:
             stmt = (
@@ -110,7 +115,7 @@ class DocumentRepositorySync:
             raise DatabaseException(operation="get_by_id", detail=str(e))
         
         if not document:
-            raise ValueError(f"Document {document_id} not found")
+            raise DocumentNotFoundException(identifier=str(document_id))
         
         return document
 
@@ -129,7 +134,6 @@ class DocumentRepositorySync:
                 operation="finish_document",
                 detail= str(e)
             )
-
 
     def mark_status_failed(self, document_id:int, user_id:int) ->Document:
         try:
