@@ -1,21 +1,19 @@
 from src.modules.document.model import Document
 from src.modules.chunk.model import Chunk
 from src.modules.user.model import User
-
-from PyPDF2 import PdfReader
-from io import BytesIO
 import os 
-from langchain_text_splitters import RecursiveCharacterTextSplitter
 import ollama
 from src.database import SyncSessionLocal
-from qdrant_client import QdrantClient
-from qdrant_client.models import PointStruct
 from src.clients.storage.service import StorageService
-
-from qdrant_client.models import Distance, VectorParams
+from src.clients.qdrant.service import QdrantService
+from src.clients.ollama.service import OllamaService
+from src.modules.chunk.service import ChunkServiceSync
+from src.modules.chunk.repository import ChunkRepositorySync
+from src.modules.document.repository import DocumentRepositorySync
+from src.modules.document.utils.pdf_processing import extract_text_from_pdf
+from src.modules.document.utils.split_text_to_chunks import split_text
 
 import logging
-import base64
 from src.core.celery_app import celery_app
 
 logger = logging.getLogger(__name__)
@@ -23,83 +21,28 @@ logger = logging.getLogger(__name__)
 
 @celery_app.task
 def process_document(content:bytes, document_id:int, user_id:int, filename:str, content_type:str):
-    content_bytes = base64.b64decode(content)
 
     
     db = SyncSessionLocal()
     storage_service = StorageService()
-    client = QdrantClient(url=os.getenv("QDRANT_URL", "http://localhost:6333"))
-
-    try:
-        client.get_collection("second_brain")
-    except:
-        client.create_collection(
-            collection_name="second_brain",
-            vectors_config=VectorParams(size=768, distance=Distance.COSINE)
-        )
-
+    qdrant_service = QdrantService()
+    ollama_service = OllamaService()
+    chunk_repo = ChunkRepositorySync(db=db)
+    chunk_service = ChunkServiceSync(repo=chunk_repo)
+    document_repo = DocumentRepositorySync(db=db)
     storage_path = None
     chunk_ids = []
-
     try:
-        reader = PdfReader(BytesIO(content_bytes)) # create new file with BytesIO wrapper => keeps file properties like read
-        pages = []
-        for page in reader.pages:
-            page_string = page.extract_text()
-            pages.append(page_string)
-        text = "\n".join(pages)
-
-        text_splitter = RecursiveCharacterTextSplitter(
-            chunk_size = 500,
-            chunk_overlap=20,
-            separators=[
-                "\n\n",
-                "\n",
-                ". ",
-                " "
-            ]
-        )
-        chunks = text_splitter.split_text(text)
-
-        ollama_client = ollama.Client(host=os.getenv("OLLAMA_HOST", "http://host.docker.internal:11434"))
-        response = ollama_client.embed(model="nomic-embed-text", input=chunks)
-        embeddings = response["embeddings"]
-
-        points = []
-        chunk_objects : list[Chunk] = []
-
-
-        for i, chunk in enumerate(chunks, start=1): #enumerate = text + index (i + pair)
-
-            chunk_objects.append(Chunk(
-                text=chunk,
-                document_id=document_id,
-                chunk_index=i,
-                user_id=user_id  
-            ))
-
-        db.add_all(chunk_objects)
-        db.flush()
-
-        for chunk_obj, vector in zip(chunk_objects, embeddings):
-            points.append(PointStruct(
-                id = chunk_obj.id,
-                vector=vector,
-                payload={"user_id":user_id,
-                          "document_id":document_id,
-                          "content": chunk_obj.text
-                         }
-                ))
-            chunk_ids.append(chunk_obj.id)
+        text = extract_text_from_pdf(content=content)
+        chunks = split_text(text)
+        embeddings = ollama_service.embed_text(chunks=chunks)
+        chunk_objects: list[Chunk] = chunk_service.create_chunks_from_text(chunks=chunks, user_id=user_id, document_id=document_id)
 
 
 
-        operation = client.upsert(
-            collection_name= "second_brain",
-            wait= True,
-            points= points
-        )
+        result = qdrant_service.insert_many_chunks(chunk_objects=chunk_objects, embeddings=embeddings)
 
+        chunk_ids = result.chunk_ids
 
         storage_path = storage_service.upload_file(
             content=content,
@@ -108,44 +51,19 @@ def process_document(content:bytes, document_id:int, user_id:int, filename:str, 
             content_type=content_type
         )
 
-        document = db.query(Document).filter(Document.id == document_id, Document.user_id == user_id).first()
-        
-        if not document:
-            raise ValueError(f"Document {document_id} not found")
-        
-        document.status= "completed"
-        document.storage_path = storage_path
-        document.chunk_count = len(points)
-        db.commit()
+        document_repo.finish_document(document_id=document_id, user_id=user_id, storage_path=storage_path, chunk_count=len(chunk_ids))
 
     except Exception as e:
         db.rollback()
 
         if chunk_ids:
-            try:
-                client.delete(
-                    collection_name="second_brain",
-                    points_selector=chunk_ids
-                )
-            except Exception as qdrant_error:
-                logger.error(f"Failed to cleanup Qdrant: {qdrant_error}")
+            qdrant_service.delete_many_chunks(chunkIds=chunk_ids)
 
         if storage_path: # delete from gcp storage 
-            try:
-                storage_service.delete_file(storage_path)
-            except:
-                pass  
+            storage_service.delete_file(storage_path)
 
-        try:
-            document = db.query(Document).filter(
-                Document.id == document_id
-            ).first()
-            if document:
-                document.status = "failed"
-                db.commit()
-        except Exception as db_error:
-            logger.error(f"Failed to update document status: {db_error}")
-        
+        document_repo.mark_status_failed(document_id=document_id, user_id=user_id)
+
         raise
     
     finally:
