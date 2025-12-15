@@ -2,7 +2,7 @@ from fastapi import HTTPException
 from google.cloud import storage
 from src.config import settings
 import logging
-from src.storage.exceptions import StorageException
+from src.clients.storage.exceptions import StorageException
 from google.cloud.exceptions import GoogleCloudError, NotFound
 from src.core.exceptions import NotFoundException
 

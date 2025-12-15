@@ -6,9 +6,9 @@ from src.config import settings # import our settings class instance
 
 # Importieren der Datenbankbasis und Modelle
 from src.database import Base # import our base class
-from src.user.model import User # import our user model
-from src.chunk.model import Chunk
-from src.document.model import Document 
+from src.modules.user.model import User # import our user model
+from src.modules.chunk.model import Chunk
+from src.modules.document.model import Document 
 
 
 

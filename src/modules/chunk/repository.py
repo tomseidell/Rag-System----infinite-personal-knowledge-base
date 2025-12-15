@@ -1,8 +1,8 @@
 from sqlalchemy.ext.asyncio import AsyncSession
-from src.chunk.model import Chunk
+from src.modules.chunk.model import Chunk
 from sqlalchemy.exc import SQLAlchemyError
 from src.core.exceptions import DatabaseException
-from src.chunk.schemas import ChunkCreate
+from src.modules.chunk.schemas import ChunkCreate
 from sqlalchemy import select
 
 

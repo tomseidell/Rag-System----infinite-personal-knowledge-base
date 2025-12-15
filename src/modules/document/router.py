@@ -1,10 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, Response
 
-from src.document.dependencies import get_document_service
-from src.document.schemas import DocumentResponse, GetDocuments
-from src.document.service import DocumentService
-from src.user.dependencies import get_current_user_id
-from src.user.model import User
+from src.modules.document.dependencies import get_document_service
+from src.modules.document.schemas import DocumentResponse, GetDocuments
+from src.modules.document.service import DocumentService
+from src.modules.user.dependencies import get_current_user_id
+from src.modules.user.model import User
 
 
 router = APIRouter()

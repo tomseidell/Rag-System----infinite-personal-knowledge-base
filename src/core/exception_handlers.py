@@ -1,12 +1,12 @@
 from fastapi import Request, status
 from fastapi.responses import JSONResponse
-from src.document.exceptions import DocumentAlreadyExistsException, DocumentNotFoundException
+from src.modules.document.exceptions import DocumentAlreadyExistsException, DocumentNotFoundException
 from src.core.exceptions import DatabaseException, InputError, NotFoundException
-from src.storage.exceptions import StorageException
+from src.clients.storage.exceptions import StorageException
 
 import logging
 
-from src.user.exceptions import InvalidCredentialsException, UserAlreadyExistsException, UserNotFoundException
+from src.modules.user.exceptions import InvalidCredentialsException, UserAlreadyExistsException, UserNotFoundException
 
 logger = logging.getLogger(__name__)
 

@@ -1,9 +1,9 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import SQLAlchemyError, NoResultFound
-from src.document.model import Document
+from src.modules.document.model import Document
 from sqlalchemy import select, update, delete
 from src.core.exceptions import DatabaseException, NotFoundException  
-from src.document.schemas import DocumentCreate, GetDocuments
+from src.modules.document.schemas import DocumentCreate, GetDocuments
 
 
 class DocumentRepository:

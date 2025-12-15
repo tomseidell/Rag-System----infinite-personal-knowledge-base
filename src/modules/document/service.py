@@ -1,18 +1,18 @@
 import uuid
 from fastapi import UploadFile
-from src.document.model import Document
-from src.document.repository import DocumentRepository
+from src.modules.document.model import Document
+from src.modules.document.repository import DocumentRepository
 import hashlib
-from src.document.schemas import DocumentCreate, GetDocuments
+from src.modules.document.schemas import DocumentCreate, GetDocuments
 from pathlib import Path
 
 
 from src.core.exceptions import InputError, NotFoundException
 
-from src.storage.service import StorageService
-from src.user.repository import UserRepository
+from src.clients.storage.service import StorageService
+from src.modules.user.repository import UserRepository
 
-from src.document.workers.pdf_reader import process_document
+from modules.document.workers.process_document import process_document
 
 import base64
 

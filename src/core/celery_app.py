@@ -14,8 +14,8 @@ celery_app.conf.update(
     task_acks_late=True,
     worker_prefetch_multiplier=1,
     task_routes={
-        "src.document.workers.*": {"queue": "documents"},
+        "src.modules.document.workers.*": {"queue": "documents"},
     }
 )
 
-from src.document.workers import pdf_reader  
+from src.modules.document.workers import process_document  

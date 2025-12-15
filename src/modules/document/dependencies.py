@@ -1,15 +1,15 @@
 from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession  # ← AsyncSession!
-from src.document.repository import DocumentRepository
-from src.user.repository import UserRepository
-from src.document.service import DocumentService
+from src.modules.document.repository import DocumentRepository
+from src.modules.user.repository import UserRepository
+from src.modules.document.service import DocumentService
 from src.database import get_db
 
 from fastapi import Depends
 
-from src.storage.service import StorageService
-from src.storage.dependencies import get_storage_service
-from src.user.dependencies import get_user_repository
+from src.clients.storage.service import StorageService
+from src.clients.storage.dependencies import get_storage_service
+from src.modules.user.dependencies import get_user_repository
 
 
 

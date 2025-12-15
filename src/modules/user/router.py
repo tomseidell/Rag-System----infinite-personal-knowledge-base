@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException
 
-from src.user.dependencies import get_user_service
-from src.user.schemas import TokenResponse, UserLogin, UserRegistration, UserResponse
-from src.user.service import UserService
-from src.user.utils import create_access_token, create_refresh_token, decode_refresh_token
+from src.modules.user.dependencies import get_user_service
+from src.modules.user.schemas import TokenResponse, UserLogin, UserRegistration, UserResponse
+from src.modules.user.service import UserService
+from src.modules.user.utils import create_access_token, create_refresh_token, decode_refresh_token
 
 
 router = APIRouter()

@@ -1,6 +1,6 @@
-from src.document.model import Document
-from src.chunk.model import Chunk
-from src.user.model import User
+from src.modules.document.model import Document
+from src.modules.chunk.model import Chunk
+from src.modules.user.model import User
 
 from PyPDF2 import PdfReader
 from io import BytesIO
@@ -10,7 +10,7 @@ import ollama
 from src.database import SyncSessionLocal
 from qdrant_client import QdrantClient
 from qdrant_client.models import PointStruct
-from src.storage.service import StorageService
+from src.clients.storage.service import StorageService
 
 from qdrant_client.models import Distance, VectorParams
 
