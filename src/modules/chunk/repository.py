@@ -1,4 +1,5 @@
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import Session
 from src.modules.chunk.model import Chunk
 from sqlalchemy.exc import SQLAlchemyError
 from src.core.exceptions import DatabaseException
@@ -54,3 +55,13 @@ class ChunkRepository:
                 detail= str(e)
             )
     
+
+
+class ChunkRepositorySync:
+    def __init__(self, db:Session):
+        self.db = db
+
+    def flush_many(self, chunks:list[Chunk]):
+        self.db.add(chunks)
+        self.db.flush()
+        return chunks
