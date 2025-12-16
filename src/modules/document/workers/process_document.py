@@ -62,7 +62,7 @@ def process_document(content:bytes, document_id:int, user_id:int, filename:str, 
         if storage_path: # delete from gcp storage 
             storage_service.delete_file(storage_path)
 
-        document_repo.mark_status_failed(document_id=document_id, user_id=user_id)
+        document_repo.mark_status_failed(document_id=document_id, user_id=user_id, error_message="Saving document failed, please try again later")
 
         raise
     

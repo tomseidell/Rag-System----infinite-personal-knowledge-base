@@ -135,10 +135,11 @@ class DocumentRepositorySync:
                 detail= str(e)
             )
 
-    def mark_status_failed(self, document_id:int, user_id:int) ->Document:
+    def mark_status_failed(self, document_id:int, user_id:int, error_message:str) ->Document:
         try:
             document = self.get_by_id(document_id=document_id, user_id=user_id)
             document.status = "failed"
+            document.error_message = error_message
             self.db.commit()
             self.db.refresh(document)
             return document
