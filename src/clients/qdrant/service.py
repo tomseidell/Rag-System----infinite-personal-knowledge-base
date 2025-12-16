@@ -82,13 +82,6 @@ class AsyncQdrantService:
     def __init__(self):
         self.client = AsyncQdrantClient(url=os.getenv("QDRANT_URL", "http://localhost:6333"))    
 
-    
-    @classmethod
-    async def create(cls):
-        instance = cls()
-        await instance.ensure_collection()
-        return instance
-
     async def ensure_collection(self):
             try:
                 await self.client.get_collection("second_brain")
