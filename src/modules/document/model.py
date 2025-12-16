@@ -24,12 +24,14 @@ class Document(Base):
 
     status: Mapped[str] = mapped_column(String, default="processing")
 
+    error_message: Mapped[str] = mapped_column(String, nullable=True)
+
     #Vector information
 
     chunk_count: Mapped[int] = mapped_column(Integer, default = 0)
-    indexed_at: Mapped[datetime | None] = mapped_column(DateTime, default=datetime.now, nullable=True) # timestamps for embeddings
+    indexed_at: Mapped[datetime | None] = mapped_column(DateTime, default=func.now(), nullable=True) # timestamps for embeddings
 
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=func.now())
 
 
     def __repr__(self):
