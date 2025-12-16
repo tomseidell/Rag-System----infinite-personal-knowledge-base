@@ -10,6 +10,7 @@ class ChunkServiceSync():
         chunk_objects=[]
         for i, chunk in enumerate(chunks, start=1): 
             chunk_objects.append(Chunk(
+                id=f"{document_id}_{i}",
                 text=chunk,
                 document_id=document_id,
                 chunk_index=i,
