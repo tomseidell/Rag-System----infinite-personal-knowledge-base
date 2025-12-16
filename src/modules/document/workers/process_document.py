@@ -12,15 +12,28 @@ from src.modules.chunk.repository import ChunkRepositorySync
 from src.modules.document.repository import DocumentRepositorySync
 from src.modules.document.utils.pdf_processing import extract_text_from_pdf
 from src.modules.document.utils.split_text_to_chunks import split_text
+from src.clients.ollama.exceptions import OllamaException
+from src.clients.qdrant.exceptions import QdrantException
+from src.clients.storage.exceptions import StorageException
+from celery.exceptions import SoftTimeLimitExceeded
 
 import logging
 from src.core.celery_app import celery_app
+from celery import Task
+
 
 logger = logging.getLogger(__name__)
 
 
-@celery_app.task
-def process_document(content:bytes, document_id:int, user_id:int, filename:str, content_type:str):
+@celery_app.task(
+    autoretry_for=(OllamaException, QdrantException, StorageException),
+    max_retries=3,
+    bind=True,
+    soft_time_limit=300,
+    time_limit= 350,
+    retry_backoff = True # exponential increasement of timeouts between retries
+)
+def process_document(self:Task, content:bytes, document_id:int, user_id:int, filename:str, content_type:str):
 
     
     db = SyncSessionLocal()
@@ -52,6 +65,32 @@ def process_document(content:bytes, document_id:int, user_id:int, filename:str, 
         )
 
         document_repo.finish_document(document_id=document_id, user_id=user_id, storage_path=storage_path, chunk_count=len(chunk_ids))
+
+    except (OllamaException, QdrantException, StorageException):
+        db.rollback()
+        if chunk_ids:
+            qdrant_service.delete_many_chunks(chunkIds=chunk_ids)
+        if storage_path:
+            storage_service.delete_file(storage_path)
+
+        if self.request.retries == self.max_retries:
+            document_repo.mark_status_failed(document_id=document_id, user_id=user_id, error_message="Saving document failed, please try again later")
+
+        raise 
+
+    except SoftTimeLimitExceeded:
+        db.rollback()
+
+        if chunk_ids:
+            qdrant_service.delete_many_chunks(chunkIds=chunk_ids)
+
+        if storage_path: # delete from gcp storage 
+            storage_service.delete_file(storage_path)
+
+        document_repo.mark_status_failed(document_id=document_id, user_id=user_id, error_message="Timeout in operation")
+
+        raise
+
 
     except Exception as e:
         db.rollback()
