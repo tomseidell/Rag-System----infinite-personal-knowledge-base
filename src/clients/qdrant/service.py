@@ -1,6 +1,6 @@
 from qdrant_client.models import PointStruct, PointIdsList, ExtendedPointId
 from qdrant_client.models import Distance, VectorParams
-from qdrant_client import QdrantClient
+from qdrant_client import QdrantClient, AsyncQdrantClient
 from src.modules.chunk.model import Chunk
 import os 
 from dataclasses import dataclass
@@ -16,7 +16,6 @@ logger = logging.getLogger(__name__)
 
 
 class QdrantService:
-
     def __init__(self):
         self.client = QdrantClient(url=os.getenv("QDRANT_URL", "http://localhost:6333"))
         self.ensure_collection()
@@ -68,12 +67,44 @@ class QdrantService:
             self.client.delete(
                 collection_name="second_brain",
                 points_selector=PointIdsList(points=chunkIds),
-
             )
             
         except Exception as e:
             logger.error(f"Failed to delete chunks from Qdrant: {e}")
             raise QdrantException(
                 operation="delete_many_chunks",
+                detail=str(e)
+            )
+        
+
+
+class AsyncQdrantService:
+    def __init__(self):
+        self.client = AsyncQdrantClient(url=os.getenv("QDRANT_URL", "http://localhost:6333"))    
+
+    
+    @classmethod
+    async def create(cls):
+        instance = cls()
+        await instance.ensure_collection()
+        return instance
+
+    async def ensure_collection(self):
+            try:
+                await self.client.get_collection("second_brain")
+            except:
+                await self.client.create_collection("second_brain")
+
+
+    async def delete_many_chunks(self,chunk_ids:list[ExtendedPointId]):
+        try:
+            await self.client.delete(
+                collection_name="second_brain",
+                points_selector=PointIdsList(points=chunk_ids),
+            )
+        except Exception as e:
+            logger.error(f"Failed to delete chunks from Qdrant: {e}")
+            raise QdrantException(
+                operation="async:delete_many_chunks",
                 detail=str(e)
             )
