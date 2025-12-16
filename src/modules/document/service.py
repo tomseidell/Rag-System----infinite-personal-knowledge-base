@@ -12,7 +12,7 @@ from src.core.exceptions import InputError, NotFoundException
 from src.clients.storage.service import StorageService
 from src.modules.user.repository import UserRepository
 
-from modules.document.workers.process_document import process_document
+from src.modules.document.workers.process_document import process_document
 
 import base64
 

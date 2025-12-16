@@ -1,6 +1,6 @@
 from datetime import datetime
 from pydantic import BaseModel, ConfigDict
-from src.document.model import Document
+from src.modules.document.model import Document
 
 
 
