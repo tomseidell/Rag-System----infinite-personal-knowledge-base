@@ -58,7 +58,7 @@ def register_exception_handlers(app):
             exc_info=True)
         return JSONResponse(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            content={"detail": "file upload failed"} 
+            content={"detail": f"{exc.operation} failed"} 
         )  
 
     @app.exception_handler(NotFoundException)
