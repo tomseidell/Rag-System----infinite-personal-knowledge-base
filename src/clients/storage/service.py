@@ -59,7 +59,8 @@ class StorageService:
     def delete_file(self, storage_path:str) -> None:
         try:
             blob = self.bucket.blob(storage_path)
-            blob.delete()
+            if blob.exists():
+                blob.delete()
         except NotFound as e:
             logger.error(f"Could not find file: {storage_path}", exc_info=True)
             raise NotFoundException(ressource=f"File: {storage_path}") from e
