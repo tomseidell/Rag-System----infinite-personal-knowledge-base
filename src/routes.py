@@ -6,7 +6,7 @@ from src.modules.user.router import router as user_router
 router = APIRouter()
 
 
-router.include_router(user_router, prefix="/users", tags= ["users"])
+router.include_router(user_router, prefix="/user", tags= ["users"])
 router.include_router(document_router, prefix="/document", tags=["document"])
 
 
