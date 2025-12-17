@@ -18,6 +18,8 @@ services:
         - CELERY_BROKER_URL=redis://redis:6379
         - CELERY_RESULT_BACKEND=redis://redis:6379  
         - QDRANT_URL=http://vector:6333
+        - OLLAMA_HOST=http://host.docker.internal:11434
+
 
       command: uvicorn src.main:app --host 0.0.0.0 --port 8000 --reload
     worker:
