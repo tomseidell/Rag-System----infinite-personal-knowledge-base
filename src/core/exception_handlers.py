@@ -3,6 +3,7 @@ from fastapi.responses import JSONResponse
 from src.modules.document.exceptions import DocumentAlreadyExistsException, DocumentNotFoundException
 from src.core.exceptions import DatabaseException, InputError, NotFoundException
 from src.clients.storage.exceptions import StorageException
+from src.clients.qdrant.exceptions import QdrantException
 
 import logging
 
@@ -116,3 +117,10 @@ def register_exception_handlers(app):
         )
     
     
+    @app.exception_handler(QdrantException)
+    async def qdrant_error_handler(request:Request, exc:QdrantException):
+        logger.warning(f"Qdrant error in: {exc.operation}: {exc.detail}")
+        return JSONResponse(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            content={"detail": "Server error occurred while processing the document"}
+        )
