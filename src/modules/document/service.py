@@ -126,12 +126,16 @@ class DocumentService:
             chunks_ids = await self.chunk_service.get_chunks_for_doc(document_id=document_id, user_id=user_id)
             await self.document_repository.delete_document(user_id=user_id, document_id=document_id)
 
-            tasks = [asyncio.to_thread(self.storage.delete_file, document.storage_path)]
+            tasks = []
 
             if chunks_ids:
                 await self.chunk_service.delete_chunks_for_doc(user_id=user_id, document_id=document_id)
                 tasks.append(self.qdrant.delete_many_chunks(chunk_ids=chunks_ids))
+            
+            if document.storage_path:
+                tasks.append(asyncio.to_thread(self.storage.delete_file, document.storage_path))
 
+                
             await asyncio.gather(*tasks)
 
             await self.db.commit()
