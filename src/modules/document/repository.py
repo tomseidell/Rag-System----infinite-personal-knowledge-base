@@ -57,7 +57,6 @@ class DocumentRepository:
             if document:
                 stmt = delete(Document).where(Document.id == document_id, Document.user_id == user_id)
                 await self.db.execute(stmt)
-                await self.db.commit()
             return document
         
 
