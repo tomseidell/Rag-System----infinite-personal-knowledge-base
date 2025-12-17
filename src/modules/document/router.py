@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, Response
+from fastapi import APIRouter, Depends, UploadFile, Response
 
 from src.modules.document.dependencies import get_document_service
 from src.modules.document.schemas import DocumentResponse, GetDocuments
