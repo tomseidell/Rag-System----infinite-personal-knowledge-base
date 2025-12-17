@@ -4,7 +4,7 @@ from src.modules.chunk.model import Chunk
 from sqlalchemy.exc import SQLAlchemyError
 from src.core.exceptions import DatabaseException
 from src.modules.chunk.schemas import ChunkCreate
-from sqlalchemy import select
+from sqlalchemy import select, delete
 
 
 class ChunkRepository:
@@ -55,7 +55,15 @@ class ChunkRepository:
                 detail= str(e)
             )
     
-
+    async def delete_chunks_for_doc(self, user_id:int, document_id:int):
+        try:
+            stmt = delete(Chunk).where(Chunk.user_id == user_id, Chunk.document_id == document_id)
+            result = await self.db.execute(stmt)
+        except SQLAlchemyError as e:
+            raise DatabaseException(
+                operation="delete chunks for document",
+                detail= str(e)
+            )
 
 class ChunkRepositorySync:
     def __init__(self, db:Session):
