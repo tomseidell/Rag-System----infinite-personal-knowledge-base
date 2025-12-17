@@ -119,18 +119,30 @@ class DocumentService:
         return content, document.original_filename, document.file_type
 
     async def delete_document(self, user_id:int, document_id:int) ->None:
-        document = await self.document_repository.get_document(user_id=user_id, document_id=document_id)
-        if document is None:
-            raise NotFoundException("document")
-        chunks_ids = await self.chunk_service.get_chunks_for_doc(document_id=document_id, user_id=user_id)
-        await self.document_repository.delete_document(user_id=user_id, document_id=document_id)
-        await self.chunk_service.delete_chunks_for_doc(user_id=user_id, document_id=document_id)
-        await asyncio.gather(
-            asyncio.to_thread(self.storage.delete_file, document.storage_path ),
-            self.qdrant.delete_many_chunks(chunk_ids=chunks_ids)
-        )
+        try:
+            document = await self.document_repository.get_document(user_id=user_id, document_id=document_id)
+            if document is None:
+                raise NotFoundException("document")
+            chunks_ids = await self.chunk_service.get_chunks_for_doc(document_id=document_id, user_id=user_id)
+            await self.document_repository.delete_document(user_id=user_id, document_id=document_id)
 
-        await self.db.commit()
+            tasks = [asyncio.to_thread(self.storage.delete_file, document.storage_path)]
+
+            if chunks_ids:
+                await self.chunk_service.delete_chunks_for_doc(user_id=user_id, document_id=document_id)
+                tasks.append(self.qdrant.delete_many_chunks(chunk_ids=chunks_ids))
+
+            await asyncio.gather(*tasks)
+
+            await self.db.commit()
+
+        except NotFoundException:
+            raise
+
+
+        except Exception:
+            await self.db.rollback()
+            raise
 
 
     async def get_documents(self, user_id:int, cursor:int | None)-> tuple[list[Document], int | None]:
