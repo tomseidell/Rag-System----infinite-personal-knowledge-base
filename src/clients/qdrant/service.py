@@ -6,6 +6,8 @@ import os
 from dataclasses import dataclass
 from src.clients.qdrant.exceptions import QdrantException
 import logging 
+from qdrant_client import models
+
 
 @dataclass
 class QdrantInsertResult:
@@ -99,5 +101,28 @@ class AsyncQdrantService:
             logger.error(f"Failed to delete chunks from Qdrant: {e}")
             raise QdrantException(
                 operation="async:delete_many_chunks",
+                detail=str(e)
+            )
+    
+    async def get_matching_chunks(self, vector, user_id:int):
+        try:
+            result = await self.client.query_points(
+                collection_name="second_brain",
+                query=vector,
+                query_filter=models.Filter(
+                    must=[
+                        models.FieldCondition(
+                            key="user_id",
+                            match=models.MatchValue(value=user_id)
+                        )
+                    ]
+                ),
+                with_payload=True,
+                limit=5
+            )
+            return result.points
+        except Exception as e:
+            raise QdrantException(
+                operation="async:get_matching_chunks",
                 detail=str(e)
             )
