@@ -5,6 +5,8 @@ from src.modules.document.repository import DocumentRepository
 import hashlib
 from src.modules.document.schemas import DocumentCreate, GetDocuments
 from pathlib import Path
+import asyncio
+from sqlalchemy.ext.asyncio import AsyncSession
 
 
 from src.core.exceptions import InputError, NotFoundException
@@ -14,15 +16,22 @@ from src.modules.user.repository import UserRepository
 
 from src.modules.document.workers.process_document import process_document
 
+from src.clients.qdrant.service import AsyncQdrantService
+
+from src.modules.chunk.dependencies import ChunkServiceAsync
+
 import base64
 
 
 
 class DocumentService:
-    def __init__(self, document_repository:DocumentRepository, storage:StorageService, user_repository:UserRepository):
+    def __init__(self, document_repository:DocumentRepository, storage:StorageService, user_repository:UserRepository, qdrant_service:AsyncQdrantService, chunk_service:ChunkServiceAsync, db:AsyncSession):
         self.document_repository = document_repository
         self.storage = storage
         self.user_repository = user_repository
+        self.qdrant = qdrant_service
+        self.chunk_service = chunk_service
+        self.db = db
 
 # private methods
     def _calculate_hash(self, content:bytes) ->str:
@@ -110,10 +119,19 @@ class DocumentService:
         return content, document.original_filename, document.file_type
 
     async def delete_document(self, user_id:int, document_id:int) ->None:
-        document = await self.document_repository.delete_document(user_id=user_id, document_id=document_id)
+        document = await self.document_repository.get_document(user_id=user_id, document_id=document_id)
         if document is None:
             raise NotFoundException("document")
-        self.storage.delete_file(document.storage_path)
+        chunks_ids = await self.chunk_service.get_chunks_for_doc(document_id=document_id, user_id=user_id)
+        await self.document_repository.delete_document(user_id=user_id, document_id=document_id)
+        await self.chunk_service.delete_chunks_for_doc(user_id=user_id, document_id=document_id)
+        await asyncio.gather(
+            asyncio.to_thread(self.storage.delete_file, document.storage_path ),
+            self.qdrant.delete_many_chunks(chunk_ids=chunks_ids)
+        )
+
+        await self.db.commit()
+
 
     async def get_documents(self, user_id:int, cursor:int | None)-> tuple[list[Document], int | None]:
         result = await self.document_repository.get_documents(user_id, cursor)
