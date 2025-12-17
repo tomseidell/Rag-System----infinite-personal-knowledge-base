@@ -28,6 +28,7 @@ def get_document_service(
      storage:StorageService = Depends(get_storage_service),
      user_repo:UserRepository = Depends(get_user_repository),
      qdrant_service:AsyncQdrantService = Depends(get_qdrant_service),
-     chunk_service:ChunkServiceAsync = Depends(get_chunk_service_async)
+     chunk_service:ChunkServiceAsync = Depends(get_chunk_service_async),
+     db: AsyncSession = Depends(get_db)
      ):
-    return DocumentService(document_repository=document_repo, storage=storage,user_repository=user_repo, qdrant_service=qdrant_service, chunk_service=chunk_service) 
+    return DocumentService(document_repository=document_repo, storage=storage,user_repository=user_repo, qdrant_service=qdrant_service, chunk_service=chunk_service, db=db) 
