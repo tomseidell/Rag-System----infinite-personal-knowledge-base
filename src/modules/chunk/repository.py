@@ -70,6 +70,6 @@ class ChunkRepositorySync:
         self.db = db
 
     def flush_many(self, chunks:list[Chunk]):
-        self.db.add(chunks)
+        self.db.add_all(chunks)
         self.db.flush()
         return chunks
