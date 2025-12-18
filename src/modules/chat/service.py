@@ -14,7 +14,7 @@ class ChatService():
     async def post_message(self, message:str, user_id:int) ->str:
         embedding = await self.ollama_service.embed_text(message)
         chunk_infos = await self.qdrant_service.get_matching_chunks(vector=embedding, user_id=user_id)
-        texts: list[str] = [chunk.payload["text"] for chunk in chunk_infos if chunk.payload]
+        texts: list[str] = [chunk.payload["content"] for chunk in chunk_infos if chunk.payload]
         answer = await self.ollama_service.create_message(texts=texts, user_input=message)
         return answer
 
