@@ -1,8 +1,6 @@
 from src.modules.document.model import Document
 from src.modules.chunk.model import Chunk
 from src.modules.user.model import User
-import os 
-import ollama
 from src.database import SyncSessionLocal
 from src.clients.storage.service import StorageService
 from src.clients.qdrant.service import QdrantService
