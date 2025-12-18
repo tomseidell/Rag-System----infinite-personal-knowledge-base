@@ -45,7 +45,7 @@ class OllamaServiceAsync():
             response: ChatResponse = await self.client.chat(model="llama3", messages=[
                 {
                     "role": "user",
-                    "content": f"Create a response and primarily focus on information from this string: {input_string}"
+                    "content": f"Create a response and primarily focus on information from this string: {input_string}. If the string is empty or simply no relevant information to the message are given, answer the question with all your basic knowledge and do not rely on the information string. The user message or input is: {user_input}"
                 }
             ])
             return response['message']['content']  
