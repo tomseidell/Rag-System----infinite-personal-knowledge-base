@@ -15,7 +15,11 @@ def extract_text_from_pdf(content:bytes) ->str:
         for page in reader.pages:
             page_string = page.extract_text()
             pages.append(page_string)
-        return "\n".join(pages)
+        content_str = "\n\n".join(pages)
+        content_str = content_str.replace('\x00', '')
+        logger.info(f"Extracted text length: {len(content_str)}")  # ← Logger
+        logger.info(f"First 200 chars: {content_str[:200]}")
+        return content_str
     except Exception as e:
         logger.error(f"Invalid or corrupted PDF: {str(e)}")
         raise PDFProcessingException(detail="Invalid or corrupted PDF")
