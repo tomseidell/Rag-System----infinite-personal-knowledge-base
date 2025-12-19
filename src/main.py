@@ -2,18 +2,28 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import sys
 from pathlib import Path
+from contextlib import asynccontextmanager
 
 
 ROOT_DIR = Path(__file__).parent.parent
 sys.path.insert(0, str(ROOT_DIR))
 from src.core.exception_handlers import register_exception_handlers
+from src.clients.qdrant.dependencies import get_qdrant_service
 from src.routes import router as routes
 
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    print("Initializing Qdrant Service...")
+    get_qdrant_service()
+    print("Qdrant Service initialized")
+    yield
 
 app = FastAPI(
     title="FastAPI Project",
     description="A FastAPI project template",
-    version="1.0.0"
+    version="1.0.0",
+    lifespan=lifespan
 )
 
 # Configure CORS
@@ -24,6 +34,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
 
 # add all exception handlers
 register_exception_handlers(app)
