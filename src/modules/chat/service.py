@@ -1,7 +1,9 @@
 from src.clients.ollama.service import OllamaServiceAsync
 from src.clients.qdrant.service import AsyncQdrantService   
 from src.modules.document.service import DocumentService
-from qdrant_client.models import ExtendedPointId
+
+from typing import AsyncIterator, AsyncGenerator
+
 
 
 class ChatService():
@@ -11,10 +13,11 @@ class ChatService():
         self.document_service = document_service
 
     
-    async def post_message(self, message:str, user_id:int) ->str:
+    async def post_message(self, message: str, user_id: int) -> AsyncGenerator[str, None]:
         embedding = await self.ollama_service.embed_text(message)
         chunk_infos = await self.qdrant_service.get_matching_chunks(vector=embedding, user_id=user_id)
         texts: list[str] = [chunk.payload["content"] for chunk in chunk_infos if chunk.payload]
-        answer = await self.ollama_service.create_message(texts=texts, user_input=message)
-        return answer
+        
+        async for chunk in self.ollama_service.create_message(texts=texts, user_input=message):
+            yield chunk
 

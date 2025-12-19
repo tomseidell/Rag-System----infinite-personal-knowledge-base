@@ -3,6 +3,8 @@ import os
 from src.clients.ollama.exceptions import OllamaException
 import logging
 from ollama import ChatResponse
+from typing import AsyncIterator, AsyncGenerator
+
 
 
 logger = logging.getLogger(__name__)
@@ -39,17 +41,20 @@ class OllamaServiceAsync():
                 detail=str(e)
             ) 
 
-    async def create_message(self, texts:list[str], user_input)->str:
+    async def create_message(self, texts:list[str], user_input)->AsyncGenerator[str , None]:
         try:
             input_string = "\n\n".join(texts)
-            response: ChatResponse = await self.client.chat(model="llama3", messages=[
+            response= await self.client.chat(model="llama3", stream=True, messages=[
                 {
                     "role": "user",
                     "content": f"Create a response and primarily focus on information from this string: {input_string}. If the string is empty or simply no relevant information to the message are given, answer the question with all your basic knowledge and do not rely on the information string. The user message or input is: {user_input}"
                 }
             ])
-            return response['message']['content']  
-
+            async for chunk in response:
+                if chunk.message.content:
+                    yield chunk.message.content
+            
+            
         except ollama.RequestError as e:
             logger.error(f"Ollama connection Error: {e}")
             raise OllamaException(
