@@ -152,3 +152,10 @@ class DocumentService:
     async def get_documents(self, user_id:int, cursor:int | None)-> tuple[list[Document], int | None]:
         result = await self.document_repository.get_documents(user_id, cursor)
         return result
+    
+
+    async def get_document_name_and_id(self, user_id:int, document_id:int):
+        document = await self.document_repository.get_document(user_id=user_id, document_id=document_id)
+        if document is None:
+            raise NotFoundException("document")
+        return document.id, document.original_filename

@@ -12,9 +12,9 @@ router = APIRouter()
 
 @router.post("/",status_code=200)
 async def postMessage(request:ChatRequest, current_user: int = Depends(get_current_user_id), chat_service:ChatService = Depends(get_chat_service)):
-    async def generate():  # ← Wrapper Funktion!
+    async def generate():  
         async for chunk in chat_service.post_message(user_id=current_user, message=request.message):
             yield f"data: {chunk}\n\n"
-        yield "data: [DONE]\n\n"  # ← Außerhalb der for-loop!
+        yield "data: [DONE]\n\n" 
     
-    return StreamingResponse(generate(), media_type="text/event-stream")  # ← Return!
+    return StreamingResponse(generate(), media_type="text/event-stream") 
