@@ -46,6 +46,7 @@ psycopg2-binary==2.9.9
 pyasn1==0.6.1
 pyasn1_modules==0.4.2
 pycryptodome==3.23.0
+pymupdf
 pydantic>=2.9
 pydantic_core>=2.23
 pydantic-settings>=2.0.3

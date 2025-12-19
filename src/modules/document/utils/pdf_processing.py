@@ -1,8 +1,7 @@
-from PyPDF2 import PdfReader
-from io import BytesIO
 import base64
 from src.modules.document.exceptions import PDFProcessingException
 import logging
+import pymupdf
 
 logger = logging.getLogger(__name__)
 
@@ -10,10 +9,10 @@ logger = logging.getLogger(__name__)
 def extract_text_from_pdf(content:bytes) ->str:
     try:
         content_bytes = base64.b64decode(content)
-        reader = PdfReader(BytesIO(content_bytes)) # create new file with BytesIO wrapper => keeps file properties like read
+        doc = pymupdf.open(stream=content_bytes, filetype="pdf")
         pages = []
-        for page in reader.pages:
-            page_string = page.extract_text()
+        for page in doc:
+            page_string = page.get_text()
             pages.append(page_string)
         content_str = "\n\n".join(pages)
         content_str = content_str.replace('\x00', '')

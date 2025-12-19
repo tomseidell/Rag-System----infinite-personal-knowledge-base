@@ -7,8 +7,8 @@ logger = logging.getLogger(__name__)
 def split_text(text:str) ->list[str]:
     try:
         text_splitter = RecursiveCharacterTextSplitter(
-            chunk_size = 500,
-            chunk_overlap=20,
+            chunk_size = 2048, # 512 tokens 
+            chunk_overlap=80, # 4% overlap
             separators=[
                 "\n\n",
                 "\n",
