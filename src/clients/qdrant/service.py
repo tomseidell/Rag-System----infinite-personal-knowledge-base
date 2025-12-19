@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from src.clients.qdrant.exceptions import QdrantException
 import logging 
 from qdrant_client import models
+from fastembed import SparseEmbedding, SparseTextEmbedding
 
 
 @dataclass
@@ -20,7 +21,22 @@ logger = logging.getLogger(__name__)
 class QdrantService:
     def __init__(self):
         self.client = QdrantClient(url=os.getenv("QDRANT_URL", "http://localhost:6333"))
+        self.sparse_model = SparseTextEmbedding(model_name="prithivida/Splade_PP_en_v1")
         self.ensure_collection()
+
+
+    def _sparse_embeddign(self, chunk_objects:list[Chunk]):
+        try:
+            texts = [chunk.text for chunk in chunk_objects]
+            sparse_embeddings : list[SparseEmbedding] = list(self.sparse_model.embed(texts))
+            return sparse_embeddings
+        except Exception as e:
+            logger.error(f"Failed to create sparse embeddings with qdrant fastembed: {e}")
+            raise QdrantException(
+                operation="sparse_embeddings",
+                detail=str(e)
+            )
+
     
     def ensure_collection(self):
         try:
@@ -28,17 +44,29 @@ class QdrantService:
         except:
             self.client.create_collection(
                 collection_name="second_brain",
-                vectors_config=VectorParams(size=768, distance=Distance.COSINE)
+                vectors_config={
+                    "dense": VectorParams(size=768, distance=Distance.COSINE),
+                },
+                sparse_vectors_config={
+                    "sparse": models.SparseVectorParams()
+                }
             )
 
     def insert_many_chunks(self, chunk_objects:list[Chunk], embeddings:list[list[float]]) ->QdrantInsertResult:
         try:
             chunk_ids = []
             points = []
-            for chunk_obj, vector in zip(chunk_objects, embeddings):
+            sparse_embeddings = self._sparse_embeddign(chunk_objects=chunk_objects)
+            for chunk_obj, dense_vector, sparse_emb in zip(chunk_objects, embeddings, sparse_embeddings):
                 points.append(PointStruct(
                     id = chunk_obj.id,
-                    vector=vector,
+                    vector={
+                        "dense": dense_vector,
+                        "sparse": models.SparseVector(
+                            indices=sparse_emb.indices.tolist(),
+                            values=sparse_emb.values.tolist()
+                        )
+                    },
                     payload={"user_id":chunk_obj.user_id,
                             "document_id":chunk_obj.document_id,
                             "content": chunk_obj.text
@@ -83,6 +111,8 @@ class QdrantService:
 class AsyncQdrantService:
     def __init__(self):
         self.client = AsyncQdrantClient(url=os.getenv("QDRANT_URL", "http://localhost:6333"))    
+        self.sparse_model = SparseTextEmbedding(model_name="prithivida/Splade_PP_en_v1")
+
 
     async def ensure_collection(self):
             try:
@@ -104,11 +134,29 @@ class AsyncQdrantService:
                 detail=str(e)
             )
     
-    async def get_matching_chunks(self, vector, user_id:int):
+    async def get_matching_chunks(self, query_text:str, dense_vector, user_id:int):
         try:
+            sparse_embedding = list(self.sparse_model.embed([query_text]))
+            sparse_vector = sparse_embedding[0]
+
             result = await self.client.query_points(
                 collection_name="second_brain",
-                query=vector,
+                prefetch=[
+                    models.Prefetch(
+                        query=dense_vector,
+                        using="dense",
+                        limit=20
+                    ),
+                    models.Prefetch(
+                        query=models.SparseVector(
+                           indices=sparse_vector.indices.tolist(),
+                           values=sparse_vector.values.tolist()
+                        ),
+                        using= "sparse",
+                        limit=20
+                    )
+                ],
+                query= models.FusionQuery(fusion=models.Fusion.RRF),
                 query_filter=models.Filter(
                     must=[
                         models.FieldCondition(
