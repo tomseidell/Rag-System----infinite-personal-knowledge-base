@@ -15,10 +15,14 @@ class OllamaService():
         self.client = ollama.Client(host=os.getenv("OLLAMA_HOST", "http://host.docker.internal:11434"))
 
 
-    def embed_text(self, chunks:list[str]):
+    def embed_text(self, chunks:list[str], batch_size = 10):
+        all_embeddings = []
         try:
-            response = self.client.embed(model="nomic-embed-text", input=chunks)
-            return response["embeddings"]
+            for i in range(0,len(chunks), batch_size):
+                batch = chunks[i:i+batch_size]
+                response = self.client.embed(model="nomic-embed-text", input=batch)
+                all_embeddings.append(response["embeddings"])
+            return all_embeddings
         except ollama.RequestError as e:
             logger.error(f"Ollama connection Error: {e}")
             raise OllamaException(
