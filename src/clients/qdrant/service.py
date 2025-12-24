@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from src.clients.qdrant.exceptions import QdrantException
 import logging 
 from qdrant_client import models
-from fastembed import SparseEmbedding, SparseTextEmbedding
+from fastembed import SparseEmbedding, SparseTextEmbedding # embedding modell built by qdrant
 
 
 @dataclass
@@ -25,17 +25,14 @@ class QdrantService:
         self.ensure_collection()
 
 
-    def _sparse_embeddign(self, chunk_objects:list[Chunk]):
+    def _sparse_embedding(self, chunk_texts: list[str]):
         try:
-            texts = [chunk.text for chunk in chunk_objects]
-            sparse_embeddings : list[SparseEmbedding] = list(self.sparse_model.embed(texts))
+            # create list of sparse embedding based on text chunks
+            sparse_embeddings: list[SparseEmbedding] = list(self.sparse_model.embed(chunk_texts))
             return sparse_embeddings
         except Exception as e:
             logger.error(f"Failed to create sparse embeddings with qdrant fastembed: {e}")
-            raise QdrantException(
-                operation="sparse_embeddings",
-                detail=str(e)
-            )
+            raise QdrantException(operation="sparse_embeddings", detail=str(e))
 
     
     def ensure_collection(self):
@@ -52,14 +49,29 @@ class QdrantService:
                 }
             )
 
-    def insert_many_chunks(self, chunk_objects:list[Chunk], embeddings:list[list[float]]) ->QdrantInsertResult:
-        try:
-            chunk_ids = []
-            points = []
-            sparse_embeddings = self._sparse_embeddign(chunk_objects=chunk_objects)
-            for chunk_obj, dense_vector, sparse_emb in zip(chunk_objects, embeddings, sparse_embeddings):
-                points.append(PointStruct(
-                    id = chunk_obj.id,
+    def insert_many_chunks(self, chunk_objects: list[Chunk], embeddings: list[list[float]]) -> QdrantInsertResult:
+        all_chunk_ids = []
+        
+        # process and upload chunks in batches
+        batch_size = 16 
+        logger.info(f"QdrantService: Starting processing of {len(chunk_objects)} chunks in batches of {batch_size}.")
+
+        for i in range(0, len(chunk_objects), batch_size):
+            batch_chunk_objects = chunk_objects[i:i + batch_size]
+            batch_dense_embeddings = embeddings[i:i + batch_size]
+            batch_texts = [chunk.text for chunk in batch_chunk_objects]
+            
+            logger.info(f"Processing Qdrant batch {i // batch_size + 1}...")
+
+            # get sparse embeddings for chunks text
+            batch_sparse_embeddings = self._sparse_embedding(batch_texts)
+
+            points_to_upload = []
+
+            # create valid insert points for qdrant, containing dense, sparse and payload
+            for chunk_obj, dense_vector, sparse_emb in zip(batch_chunk_objects, batch_dense_embeddings, batch_sparse_embeddings):
+                points_to_upload.append(PointStruct(
+                    id=chunk_obj.id,
                     vector={
                         "dense": dense_vector,
                         "sparse": models.SparseVector(
@@ -67,31 +79,31 @@ class QdrantService:
                             values=sparse_emb.values.tolist()
                         )
                     },
-                    payload={"user_id":chunk_obj.user_id,
-                            "document_id":chunk_obj.document_id,
-                            "content": chunk_obj.text
-                            }
-                    ))
-                chunk_ids.append(chunk_obj.id)
+                    payload={
+                        "user_id": chunk_obj.user_id,
+                        "document_id": chunk_obj.document_id,
+                        "content": chunk_obj.text
+                    }
+                ))
+                all_chunk_ids.append(chunk_obj.id)
 
+            try:
+                # upload chunks to qdrant db
+                self.client.upsert(
+                    collection_name="second_brain",
+                    wait=True,
+                    points=points_to_upload
+                )
+                logger.info(f"Qdrant batch {i // batch_size + 1} uploaded successfully.")
+            except Exception as e:
+                logger.error(f"Failed to insert batch to Qdrant: {e}")
+                raise QdrantException(operation="insert_batch", detail=str(e))
 
-            self.client.upsert(
-                collection_name= "second_brain",
-                wait= True,
-                points= points
-            )
-
-            return QdrantInsertResult(
-                chunk_count=len(points),
-                chunk_ids=chunk_ids
-            )
-        except Exception as e:
-            logger.error(f"Failed to insert chunks to Qdrant: {e}")
-            raise QdrantException(
-                operation="insert_many_chunks",
-                detail=str(e)
-            )
- 
+        return QdrantInsertResult(
+            chunk_count=len(all_chunk_ids),
+            chunk_ids=all_chunk_ids
+        )
+    
     def delete_many_chunks(self, chunkIds:list[ExtendedPointId]):
         try:
             self.client.delete(
