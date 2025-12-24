@@ -14,10 +14,11 @@ from src.clients.ollama.exceptions import OllamaException
 from src.clients.qdrant.exceptions import QdrantException
 from src.clients.storage.exceptions import StorageException
 from celery.exceptions import SoftTimeLimitExceeded
-
+from src.modules.document.utils.log_memory import log_memory
 import logging
 from src.core.celery_app import celery_app
 from celery import Task
+import gc
 
 
 logger = logging.getLogger(__name__)
@@ -29,11 +30,10 @@ logger = logging.getLogger(__name__)
     bind=True,
     soft_time_limit=300,
     time_limit= 350,
-    retry_backoff = True # exponential increasement of timeouts between retries
+    retry_backoff = True # increase time between retries exponentially 
 )
-def process_document(self:Task, content:bytes, document_id:int, user_id:int, filename:str, content_type:str):
-
-    
+def process_document(self: Task, content: bytes, document_id: int, user_id: int, filename: str, content_type: str):
+    log_memory("Task Start")
     db = SyncSessionLocal()
     storage_service = StorageService()
     qdrant_service = QdrantService()
@@ -41,70 +41,124 @@ def process_document(self:Task, content:bytes, document_id:int, user_id:int, fil
     chunk_repo = ChunkRepositorySync(db=db)
     chunk_service = ChunkServiceSync(repo=chunk_repo)
     document_repo = DocumentRepositorySync(db=db)
+    log_memory("After Services Init")
+    
     storage_path = None
     chunk_ids = []
+    
     try:
+        logger.info(f"Processing document {document_id} ({filename})")
+        log_memory(f"Content received ({len(content)} bytes)")
+        
         text = extract_text_from_pdf(content=content)
+        log_memory(f"After Text Extraction ({len(text)} chars)")
+        
         chunks = split_text(text)
+        log_memory(f"After Chunking ({len(chunks)} chunks)")
+
+        # remove variable to keep ram efficient 
+        del text
+        gc.collect()
+        log_memory("After Text Cleanup")
+        
         embeddings = ollama_service.embed_text(chunks=chunks)
-        chunk_objects: list[Chunk] = chunk_service.create_chunks_from_text(chunks=chunks, user_id=user_id, document_id=document_id)
-
-
-
-        result = qdrant_service.insert_many_chunks(chunk_objects=chunk_objects, embeddings=embeddings)
-
+        log_memory(f"After Embeddings ({len(embeddings)} vectors)")
+        
+        chunk_objects: list[Chunk] = chunk_service.create_chunks_from_text(
+            chunks=chunks, 
+            user_id=user_id, 
+            document_id=document_id
+        )
+        log_memory(f"After Chunk Objects ({len(chunk_objects)} objects)")
+        del chunks
+        gc.collect()
+        log_memory("After Chunks Cleanup")
+        
+        result = qdrant_service.insert_many_chunks(
+            chunk_objects=chunk_objects, 
+            embeddings=embeddings
+        )
         chunk_ids = result.chunk_ids
-
+        log_memory(f"After Qdrant Insert ({len(chunk_ids)} inserted)")
+        del embeddings, chunk_objects
+        gc.collect()
+        log_memory("After Embeddings Cleanup")
+        
         storage_path = storage_service.upload_file(
             content=content,
             filename=filename,
             user_id=user_id,
             content_type=content_type
         )
+        log_memory("After Storage Upload")
+        
+        # delete the bytes 
+        del content
+        gc.collect()
+        log_memory("After Content Cleanup")
+        
+        # mark document as finished 
+        document_repo.finish_document(
+            document_id=document_id, 
+            user_id=user_id, 
+            storage_path=storage_path, 
+            chunk_count=len(chunk_ids)
+        )
+        log_memory("After DB Update")
+        
+        logger.info(f"Document {document_id} processed successfully!")
+        log_memory("Task Success")
 
-        document_repo.finish_document(document_id=document_id, user_id=user_id, storage_path=storage_path, chunk_count=len(chunk_ids))
+    # retry for 3 error types
+    except (OllamaException, QdrantException, StorageException) as e:
+        logger.error(f"Service exception: {e}")
+        db.rollback()
+        
+        if chunk_ids:
+            qdrant_service.delete_many_chunks(chunkIds=chunk_ids)
+        if storage_path:
+            storage_service.delete_file(storage_path)
+        if self.request.retries == self.max_retries:
+            document_repo.mark_status_failed(
+                document_id=document_id, 
+                user_id=user_id, 
+                error_message="Saving document failed, please try again later"
+            )
+        raise
 
-    except (OllamaException, QdrantException, StorageException):
+    # mark task as failed when having too many retries
+    except SoftTimeLimitExceeded:
+        logger.error("Task timeout!")
         db.rollback()
         if chunk_ids:
             qdrant_service.delete_many_chunks(chunkIds=chunk_ids)
         if storage_path:
             storage_service.delete_file(storage_path)
-
-        if self.request.retries == self.max_retries:
-            document_repo.mark_status_failed(document_id=document_id, user_id=user_id, error_message="Saving document failed, please try again later")
-
-        raise 
-
-    except SoftTimeLimitExceeded:
-        db.rollback()
-
-        if chunk_ids:
-            qdrant_service.delete_many_chunks(chunkIds=chunk_ids)
-
-        if storage_path: # delete from gcp storage 
-            storage_service.delete_file(storage_path)
-
-        document_repo.mark_status_failed(document_id=document_id, user_id=user_id, error_message="Timeout in operation")
-
+        document_repo.mark_status_failed(
+            document_id=document_id, 
+            user_id=user_id, 
+            error_message="Timeout in operation"
+        )
         raise
 
-
     except Exception as e:
+        logger.error(f"Unexpected exception: {e}", exc_info=True)
         db.rollback()
-
         if chunk_ids:
             qdrant_service.delete_many_chunks(chunkIds=chunk_ids)
-
-        if storage_path: # delete from gcp storage 
+        if storage_path:
             storage_service.delete_file(storage_path)
-
-        document_repo.mark_status_failed(document_id=document_id, user_id=user_id, error_message="Saving document failed, please try again later")
-
+        document_repo.mark_status_failed(
+            document_id=document_id, 
+            user_id=user_id, 
+            error_message="Saving document failed, please try again later"
+        )
         raise
     
     finally:
         db.close()
+        gc.collect()
+        log_memory("🏁 Task End")
 
 
 
