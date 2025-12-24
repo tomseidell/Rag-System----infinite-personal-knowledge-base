@@ -7,7 +7,7 @@ logger = logging.getLogger(__name__)
 def split_text(text: str) -> list[str]:
     try:
         text_splitter = RecursiveCharacterTextSplitter(
-            chunk_size=2048,  # Reduziert von 1900 für mehr Sicherheit
+            chunk_size=2048,  
             chunk_overlap=100,
             separators=[
                 "\n\n",
@@ -19,26 +19,17 @@ def split_text(text: str) -> list[str]:
         
         chunks = text_splitter.split_text(text)
         
-        # Validierung und Cleanup der Chunks
+        # validating chunks 
         clean_chunks = []
         for i, chunk in enumerate(chunks):
-            # Prüfe auf problematische Chunks
-            if len(chunk) > 2000:
-                logger.warning(f"Chunk {i} is too long ({len(chunk)} chars), splitting further")
-                # Split zu große Chunks nochmal
-                sub_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=50)
-                sub_chunks = sub_splitter.split_text(chunk)
-                clean_chunks.extend(sub_chunks)
-                continue
-            
-            # Prüfe auf Encoding-Probleme
+            # check for encoding errors
             try:
                 chunk.encode('utf-8')
             except UnicodeEncodeError as e:
                 logger.error(f"Chunk {i} has encoding issues: {e}, attempting cleanup")
                 chunk = chunk.encode('utf-8', errors='ignore').decode('utf-8')
             
-            # Nur nicht-leere Chunks hinzufügen
+            # only add not empy chunks
             if chunk.strip():
                 clean_chunks.append(chunk.strip())
             else:
