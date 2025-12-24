@@ -13,6 +13,7 @@ celery_app.conf.update(
     accept_content=["json"],
     task_acks_late=True,
     worker_prefetch_multiplier=1,
+    worker_max_tasks_per_child = 10, # kill the worker after 10 tasks
     task_routes={
         "src.modules.document.workers.*": {"queue": "documents"},
     }
