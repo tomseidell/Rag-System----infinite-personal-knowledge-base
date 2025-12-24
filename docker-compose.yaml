@@ -38,7 +38,7 @@ services:
 
       volumes:
       - .:/app
-      command: celery -A src.core.celery_app worker --loglevel=info --queues=documents
+      command: celery -A src.core.celery_app worker --loglevel=info --queues=documents --concurrency=1 # start 1 worker
     db:
       image: postgres:15-alpine
       environment:
