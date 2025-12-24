@@ -2,9 +2,13 @@ import ollama
 import os
 from src.clients.ollama.exceptions import OllamaException
 import logging
-from ollama import ChatResponse
-from typing import AsyncIterator, AsyncGenerator
+from typing import AsyncGenerator
 import time
+import gc
+
+
+logger = logging.getLogger(__name__)
+
 
 
 logger = logging.getLogger(__name__)
@@ -18,7 +22,6 @@ class OllamaService():
         all_embeddings = []
         skipped_indices = []
         
-        logger.info(f"--- BRUTE FORCE STABILITY MODE ---")
         logger.info(f"Total chunks: {len(chunks)}, batch_size: {batch_size}")
         
         reset_after_n_batches = 4 
@@ -33,7 +36,6 @@ class OllamaService():
                 logger.warning(f"Batch {batch_num} is a reset batch. Forcing model reload after this.")
                 current_keep_alive = 0
 
-            # Retry-Logik für jeden Batch
             retry_count = 0
             batch_success = False
             
@@ -41,51 +43,58 @@ class OllamaService():
                 try:
                     logger.info(f"Processing Batch {batch_num} ({len(batch)} chunks)... [Attempt {retry_count + 1}]")
                     
-                    # Log chunk details for debugging
-                    for idx, chunk in enumerate(batch):
-                        chunk_global_idx = i + idx
-                        logger.debug(f"  Chunk {chunk_global_idx}: {len(chunk)} chars, first 50: {chunk[:50]}")
-                    
+                    # dynamically restart ollamas embedding modell based on current_keep_alive var
                     response = self.client.embed(
                         model="nomic-embed-text", 
                         input=batch,
                         keep_alive=current_keep_alive
                     )
                     
+                    # add successfull embeddings to global array 
                     all_embeddings.extend(response["embeddings"])
-                    logger.info(f"Batch {batch_num} done ✓")
+                    logger.info(f"Batch {batch_num} done")
                     batch_success = True
 
+                    del response
+                    gc.collect()
+
+                    # when restarting ollama, wait 2 seconds untio next request
                     if current_keep_alive == 0:
                         logger.warning("Pausing for 2 seconds to allow Ollama to reset...")
                         time.sleep(2)
                     
                 except ollama.ResponseError as e:
                     retry_count += 1
-                    logger.error(f"!!! Ollama ResponseError on Batch {batch_num} (Attempt {retry_count}) !!!")
+                    logger.error(f"Ollama ResponseError on Batch {batch_num} (Attempt {retry_count})")
                     logger.error(f"Error details: {e}")
                     
+                    # if current try is less than max retries, retry to embed
                     if retry_count < max_retries_per_batch:
                         logger.warning(f"Retrying batch {batch_num} after 3 second pause...")
                         time.sleep(3)
                     else:
-                        # Nach allen Retries: Batch überspringen
+                        #skip batch after 2 retries 
                         logger.error(f"SKIPPING Batch {batch_num} after {max_retries_per_batch} failed attempts")
                         
-                        # Füge leere Embeddings für die übersprungenen Chunks hinzu
+                        # add embedding of 0's to array
                         for idx in range(len(batch)):
                             chunk_global_idx = i + idx
                             skipped_indices.append(chunk_global_idx)
-                            # Füge einen Null-Vektor hinzu (oder eine andere Placeholder-Strategie)
-                            all_embeddings.append([0.0] * 768)  # nomic-embed-text hat 768 Dimensionen
+                            all_embeddings.append([0.0] * 768)
                         
                         logger.warning(f"Added placeholder embeddings for skipped chunks: {skipped_indices[-len(batch):]}")
+            #clear Ram
+            del batch
+            gc.collect()
 
         if skipped_indices:
             logger.warning(f"--- COMPLETED WITH WARNINGS: {len(skipped_indices)} chunks were skipped ---")
             logger.warning(f"Skipped chunk indices: {skipped_indices}")
         else:
             logger.info(f"--- STABILITY MODE SUCCESS: All {len(chunks)} chunks processed. ---")
+        
+        del chunks
+        gc.collect()
         
         return all_embeddings
 
