@@ -16,30 +16,30 @@ logger = logging.getLogger(__name__)
 
 class OllamaService():
     def __init__(self):
+        # connect to locally running ollama 
         self.client = ollama.Client(host=os.getenv("OLLAMA_HOST", "http://host.docker.internal:11434"))
 
+    # create dense embedding for array of text chunks
     def embed_text(self, chunks: list[str], batch_size: int = 10, max_retries_per_batch: int = 2):
         all_embeddings = []
         skipped_indices = []
         
         logger.info(f"Total chunks: {len(chunks)}, batch_size: {batch_size}")
         
-        reset_after_n_batches = 4 
-
         for i in range(0, len(chunks), batch_size):
+            # create array of 10 chunks 
             batch = chunks[i:i + batch_size]
-            batch_num = i // batch_size + 1
-            
-            if batch_num % reset_after_n_batches == 0:
-                logger.warning(f"Batch {batch_num} is a reset batch. Forcing model reload after this.")
 
+            batch_num = i // batch_size + 1
             retry_count = 0
             batch_success = False
             
+            # try to embed as long as tries is less than 2 and batch has not been embedded 
             while retry_count < max_retries_per_batch and not batch_success:
                 try:
                     logger.info(f"Processing Batch {batch_num} ({len(batch)} chunks)... [Attempt {retry_count + 1}]")
                     
+                    # embed 10 text chunks at a time
                     response = self.client.embed(
                         model="nomic-embed-text", 
                         input=batch,
@@ -50,15 +50,17 @@ class OllamaService():
                     logger.info(f"Batch {batch_num} done")
                     batch_success = True
 
+                    # remove from ram and cache
                     del response
                     gc.collect()
                     
+                # catch ollama specific error
                 except ollama.ResponseError as e:
                     retry_count += 1
                     logger.error(f"Ollama ResponseError on Batch {batch_num} (Attempt {retry_count})")
                     logger.error(f"Error details: {e}")
                     
-                    # if current try is less than max retries, retry to embed
+                    # if current try is less than max retries, retry to embed 
                     if retry_count < max_retries_per_batch:
                         logger.warning(f"Retrying batch {batch_num} after 3 second pause...")
                         time.sleep(3)
@@ -66,7 +68,7 @@ class OllamaService():
                         #skip batch after 2 retries 
                         logger.error(f"SKIPPING Batch {batch_num} after {max_retries_per_batch} failed attempts")
                         
-                        # add embedding of 0's to array
+                        # add embedding of 0's to array for specific batch
                         for idx in range(len(batch)):
                             chunk_global_idx = i + idx
                             skipped_indices.append(chunk_global_idx)
