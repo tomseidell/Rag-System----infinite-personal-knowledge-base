@@ -186,3 +186,6 @@ class AsyncQdrantService:
                 operation="async:get_matching_chunks",
                 detail=str(e)
             )
+        
+
+        

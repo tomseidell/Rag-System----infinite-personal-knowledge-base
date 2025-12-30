@@ -158,7 +158,7 @@ def process_document(self: Task, content: bytes, document_id: int, user_id: int,
     finally:
         db.close()
         gc.collect()
-        log_memory("🏁 Task End")
+        log_memory("Task End")
 
 
 
