@@ -61,29 +61,36 @@ def process_document(self: Task, content: bytes, document_id: int, user_id: int,
         gc.collect()
         log_memory("After Text Cleanup")
         
-        embeddings = ollama_service.embed_text(chunks=chunks)
-        log_memory(f"After Embeddings ({len(embeddings)} vectors)")
+        # create dense embeddings 
+        dense_embeddings = ollama_service.embed_text(chunks=chunks)
+        log_memory(f"After Embeddings ({len(dense_embeddings)} vectors)")
         
+        # save chunks to database
         chunk_objects: list[Chunk] = chunk_service.create_chunks_from_text(
             chunks=chunks, 
             user_id=user_id, 
             document_id=document_id
         )
-        log_memory(f"After Chunk Objects ({len(chunk_objects)} objects)")
+        log_memory(f"After saving chunks to db ({len(chunk_objects)} objects)")
+
+        
+        # create sparse embeddings and save chunks in vector db
+        sparse_embeddings = qdrant_service.create_sparse_embedding(chunks)
+
+        # safe chunks to vector db
+        qdrant_insert_result = qdrant_service.insert_chunks(chunk_objects=chunk_objects, dense_embeddings=dense_embeddings, sparse_embeddings=sparse_embeddings )
+
         del chunks
         gc.collect()
         log_memory("After Chunks Cleanup")
-        
-        result = qdrant_service.insert_many_chunks(
-            chunk_objects=chunk_objects, 
-            embeddings=embeddings
-        )
-        chunk_ids = result.chunk_ids
+
+        chunk_ids = qdrant_insert_result.chunk_ids
         log_memory(f"After Qdrant Insert ({len(chunk_ids)} inserted)")
-        del embeddings, chunk_objects
+        del dense_embeddings, chunk_objects
         gc.collect()
         log_memory("After Embeddings Cleanup")
         
+        # upload file to gcp bucket 
         storage_path = storage_service.upload_file(
             content=content,
             filename=filename,
@@ -97,7 +104,7 @@ def process_document(self: Task, content: bytes, document_id: int, user_id: int,
         gc.collect()
         log_memory("After Content Cleanup")
         
-        # mark document as finished 
+        # mark document as finished in db documents table 
         document_repo.finish_document(
             document_id=document_id, 
             user_id=user_id, 
@@ -141,6 +148,7 @@ def process_document(self: Task, content: bytes, document_id: int, user_id: int,
         )
         raise
 
+    # when unexcpected error occurs, stop and rollback
     except Exception as e:
         logger.error(f"Unexpected exception: {e}", exc_info=True)
         db.rollback()
