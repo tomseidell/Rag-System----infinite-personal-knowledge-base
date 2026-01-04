@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from prometheus_fastapi_instrumentator import Instrumentator # prometheus client wrapper: https://github.com/trallnag/prometheus-fastapi-instrumentator
 from fastapi.middleware.cors import CORSMiddleware
 import sys
 from pathlib import Path
@@ -35,12 +36,16 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+Instrumentator().instrument(app).expose(app) # middleware in our application, tracking every request and mapping it to /metrics
+
+
 
 # add all exception handlers
 register_exception_handlers(app)
 
 
 app.include_router(routes)
+
 
 
 if __name__ == "__main__":

@@ -40,6 +40,7 @@ passlib==1.7.4
 pathlib==1.0.1
 pdfreader==0.1.15
 pillow==12.0.0
+prometheus_fastapi_instrumentator
 prompt_toolkit==3.0.52
 proto-plus==1.26.1
 protobuf==6.33.0

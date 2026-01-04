@@ -4,11 +4,11 @@ services:
       ports:
         - "6379:6379"
     api:
-      build: .
+      build: . # Dockerfile from same folder 
       ports:
         - "8000:8000"
-      volumes:
-        - .:/app
+      volumes: 
+        - .:/app # take all changes from lokal folder and map changes to running docker container (app folder)
       depends_on:
         - redis
         - db
@@ -21,7 +21,7 @@ services:
         - OLLAMA_HOST=http://host.docker.internal:11434
 
 
-      command: uvicorn src.main:app --host 0.0.0.0 --port 8000 --reload
+      command: uvicorn src.main:app --host 0.0.0.0 --port 8000 --reload # overrite cmd from dockerfile
     worker:
       build: .
       depends_on:
@@ -70,6 +70,16 @@ services:
         - "6334:6334" #grpc
       volumes:
         - qdrant_data:/qdrant/storage 
+    prometheus:
+      image: prom/prometheus
+      ports:
+        - "9090:9090"
+      volumes:
+        - ./prometheus.yml:/etc/prometheus/prometheus.yml # map lokal prometheus file to container 
+    grafana:
+      image: grafana/grafana
+      ports:
+        - "3000:3000"
 volumes:
   postgres_data: 
   qdrant_data:     

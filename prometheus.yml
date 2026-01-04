@@ -1,0 +1,12 @@
+global:
+  scrape_interval:     15s # every 15 seconds => request to endpoint 
+  evaluation_interval: 15s # run rules every 15 seconds
+
+rule_files:
+  # - "first.rules"
+  # - "second.rules"
+
+scrape_configs:
+  - job_name: prometheus
+    static_configs:
+      - targets: ['api:8000']
