@@ -36,7 +36,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-Instrumentator().instrument(app).expose(app) # middleware in our application, tracking every request and mapping it to /metrics
+instrumentator = Instrumentator(
+    excluded_handlers=["/metrics"] # exclude / metrics endpoint for metrics in prometheus 
+)
+
+# middleware in our application, tracking every request and mapping it to /metrics
+instrumentator.instrument(app).expose(app, include_in_schema=False,) # dont show in /docs
 
 
 
