@@ -187,7 +187,7 @@ class AsyncQdrantService:
                     ]
                 ),
                 with_payload=True,
-                limit=5
+                limit=3
             )
             return result.points
         except Exception as e:
