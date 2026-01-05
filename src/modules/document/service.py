@@ -51,6 +51,7 @@ class DocumentService:
         name = path.stem  # "document"
         ext = path.suffix  # ".pdf"
         
+        # random id
         unique_id = uuid.uuid4()
         
         return f"{unique_id}_{name}{ext}" 
@@ -72,8 +73,11 @@ class DocumentService:
             )
         
         content_type = file.content_type or "application/octet-stream" # fallback undefined content type
+
+        # create unique hash acting as identifier for each document 
         content_hash = self._calculate_hash(content=content)
 
+        # check if document with hash is already stored in db
         existing = await self.document_repository.check_for_existing_hash(user_id=user_id, content_hash=content_hash)
 
         if existing: #do not save document if already existing 
@@ -95,13 +99,10 @@ class DocumentService:
             user_id = user_id,
             title = title,
             original_filename = file.filename,
-            #storage_path = storage_path,
             file_size=len(content),
             file_type=content_type,
             source_type=source_type,
             content_hash=content_hash,
-            #source_id=None,
-            #chunk_count=0
         )
 
         db_document = await self.document_repository.create_document(document)

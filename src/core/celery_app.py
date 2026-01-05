@@ -7,8 +7,8 @@ from src.clients.qdrant.service import QdrantService
 
 celery_app = Celery(
     "worker",
-    broker=os.getenv("CELERY_BROKER_URL", "redis://localhost:6379"),
-    backend=os.getenv("CELERY_RESULT_BACKEND", "redis://localhost:6379"),
+    broker=os.getenv("CELERY_BROKER_URL", "redis://localhost:6379"), # where to push tasks
+    backend=os.getenv("CELERY_RESULT_BACKEND", "redis://localhost:6379"), # where to save tasks
 )
 
 celery_app.conf.update(
@@ -17,9 +17,8 @@ celery_app.conf.update(
     accept_content=["json"],
     task_acks_late=True,
     worker_prefetch_multiplier=1,
-    #worker_max_tasks_per_child = 10, # kill the worker after 10 tasks
-    task_routes={
-        "src.modules.document.workers.*": {"queue": "documents"},
+    task_routes={ 
+        "src.modules.document.workers.*": {"queue": "documents"}, # if called funcion is in relative path to key, task should go to documents queue
     }
 )
 
