@@ -13,3 +13,10 @@ class RedisService:
     
     async def delete(self, key: str):
         await self.client.delete(key)
+
+    async def incr(self, key: str) -> int: # creates key with 0 and increments
+        result = await self.client.incr(key)
+        return result  
+
+    async def expire(self, key:str, seconds:int):
+        await self.client.expire(name=key, time=seconds)

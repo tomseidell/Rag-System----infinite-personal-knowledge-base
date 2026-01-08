@@ -4,6 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 import sys
 from pathlib import Path
 from contextlib import asynccontextmanager
+from src.core.middleware.rate_limit import rate_limit_middleware
 
 
 ROOT_DIR = Path(__file__).parent.parent
@@ -26,6 +27,8 @@ app = FastAPI(
     version="1.0.0",
     lifespan=lifespan
 )
+
+app.middleware("http")(rate_limit_middleware)
 
 # Configure CORS
 app.add_middleware(
