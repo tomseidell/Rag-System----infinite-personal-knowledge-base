@@ -166,15 +166,15 @@ class AsyncQdrantService:
                     models.Prefetch(
                         query=dense_vector,
                         using="dense",
-                        limit=20
-                    ),
+                        limit=25
+                    ), 
                     models.Prefetch(
                         query=models.SparseVector(
                            indices=sparse_vector.indices.tolist(),
                            values=sparse_vector.values.tolist()
                         ),
                         using= "sparse",
-                        limit=20
+                        limit=15
                     )
                 ],
                 query= models.FusionQuery(fusion=models.Fusion.RRF),
