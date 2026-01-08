@@ -25,11 +25,11 @@ logger = logging.getLogger(__name__)
 
 
 @celery_app.task(
-    autoretry_for=(OllamaException, QdrantException, StorageException),
+    autoretry_for=(OllamaException, QdrantException, StorageException), # if exception occurs, celery re- adds task to redis to perform retry
     max_retries=3,
     bind=True,
-    soft_time_limit=300,
-    time_limit= 350,
+    soft_time_limit=300, # retry logic
+    time_limit= 350, # mark task as failed
     retry_backoff = True # increase time between retries exponentially 
 )
 def process_document(self: Task, content: bytes, document_id: int, user_id: int, filename: str, content_type: str):
