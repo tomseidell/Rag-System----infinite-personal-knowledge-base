@@ -1,25 +1,7 @@
 from app.modules.chunk.model import Chunk
-from app.modules.chunk.repository import ChunkRepositorySync, ChunkRepository
+from app.modules.chunk.repository import ChunkRepository
 from qdrant_client.models import ExtendedPointId
 
-
-class ChunkServiceSync():
-
-    def __init__(self, repo :ChunkRepositorySync):
-        self.repo = repo
-
-    def create_chunks_from_text(self,chunks:list[str], document_id:int, user_id:int):
-        chunk_objects=[]
-        for i, chunk in enumerate(chunks, start=1): 
-            chunk_objects.append(Chunk(
-                text=chunk,
-                document_id=document_id,
-                chunk_index=i,
-                user_id=user_id  
-            ))
-
-        return self.repo.flush_many(chunks=chunk_objects)
-    
 
 class ChunkServiceAsync():
     def __init__(self, repositoy: ChunkRepository):

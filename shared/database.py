@@ -4,7 +4,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 
-from app.config import settings
+from shared.config import settings
 
 database_url = f"postgresql+asyncpg://{settings.DATABASE_USER}:{settings.DATABASE_PASSWORD}@{settings.DB_HOST}:{settings.DATABASE_PORT}/{settings.DB_NAME}"
 

@@ -1,9 +1,11 @@
-from celery import Celery
 import os
+
+from celery import Celery
 from celery.signals import worker_process_init
 from functools import lru_cache
-from src.clients.qdrant.service import QdrantService
 
+from worker.clients.qdrant_service import QdrantService
+from worker.process_document import process_document  # Task registrieren
 
 celery_app = Celery(
     "worker",
@@ -33,4 +35,4 @@ def get_qdrant_service():
 def init_models(**kwargs):
     get_qdrant_service()
 
-from src.modules.document.workers import process_document  
+from worker import process_document

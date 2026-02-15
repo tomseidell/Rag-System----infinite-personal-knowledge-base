@@ -14,7 +14,7 @@ from app.core.exceptions import InputError, NotFoundException
 from app.clients.storage.service import StorageService
 from app.modules.user.repository import UserRepository
 
-from app.modules.document.workers.process_document import process_document
+from worker.process_document import process_document
 
 from app.clients.qdrant.service import AsyncQdrantService
 
@@ -33,7 +33,7 @@ class DocumentService:
         self.chunk_service = chunk_service
         self.db = db
 
-# private methods
+    # private methods
     def _calculate_hash(self, content:bytes) ->str:
         hashed_string = hashlib.sha256(content).hexdigest()
         return hashed_string

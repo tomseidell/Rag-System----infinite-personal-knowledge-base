@@ -1,25 +1,23 @@
-from src.modules.document.model import Document
-from src.modules.chunk.model import Chunk
-from src.modules.user.model import User
-from src.database import SyncSessionLocal
-from src.clients.storage.service import StorageService
-from src.clients.qdrant.service import QdrantService
-from src.clients.ollama.service import OllamaService
-from src.modules.chunk.service import ChunkServiceSync
-from src.modules.chunk.repository import ChunkRepositorySync
-from src.modules.document.repository import DocumentRepositorySync
-from src.modules.document.utils.pdf_processing import extract_text_from_pdf
-from src.modules.document.utils.split_text_to_chunks import split_text
-from src.clients.ollama.exceptions import OllamaException
-from src.clients.qdrant.exceptions import QdrantException
-from src.clients.storage.exceptions import StorageException
-from celery.exceptions import SoftTimeLimitExceeded
-from src.modules.document.utils.log_memory import log_memory
-import logging
-from src.core.celery_app import celery_app
-from celery import Task
 import gc
+import logging
 
+from celery import Task
+from celery.exceptions import SoftTimeLimitExceeded
+
+from shared.database import SyncSessionLocal
+from shared.modules.chunk.model import Chunk
+from worker.utils.document.log_memory import log_memory
+from worker.utils.document.pdf_processing import extract_text_from_pdf
+from worker.utils.document.split_text_to_chunks import split_text
+
+from worker.celery_app import celery_app
+from worker.repositories import ChunkRepositorySync, DocumentRepositorySync
+from worker.services import ChunkServiceSync
+
+from shared.core.exceptions import OllamaException, QdrantException, StorageException
+from worker.clients.storage_service import StorageService
+from worker.clients.qdrant_service import QdrantService
+from worker.clients.ollama_service import OllamaService
 
 logger = logging.getLogger(__name__)
 
@@ -42,17 +40,17 @@ def process_document(self: Task, content: bytes, document_id: int, user_id: int,
     chunk_service = ChunkServiceSync(repo=chunk_repo)
     document_repo = DocumentRepositorySync(db=db)
     log_memory("After Services Init")
-    
+
     storage_path = None
     chunk_ids = []
-    
+
     try:
         logger.info(f"Processing document {document_id} ({filename})")
         log_memory(f"Content received ({len(content)} bytes)")
-        
+
         text = extract_text_from_pdf(content=content)
         log_memory(f"After Text Extraction ({len(text)} chars)")
-        
+
         chunks = split_text(text)
         log_memory(f"After Chunking ({len(chunks)} chunks)")
 
