@@ -1,10 +1,10 @@
 from fastapi import Depends
-from app.clients.qdrant.dependencies import get_qdrant_service
-from app.modules.document.dependencies import get_document_service
-from app.clients.ollama.dependency import get_ollama_service
-from app.clients.redis.dependency import get_redis_service
+from api.clients.qdrant.dependencies import get_qdrant_service
+from api.modules.document.dependencies import get_document_service
+from api.clients.ollama.dependency import get_ollama_service
+from api.clients.redis.dependency import get_redis_service
 
-from app.modules.chat.service import ChatService
+from api.modules.chat.service import ChatService
 
 def get_chat_service(
     qdrant_service = Depends(get_qdrant_service),

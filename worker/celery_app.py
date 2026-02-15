@@ -5,7 +5,6 @@ from celery.signals import worker_process_init
 from functools import lru_cache
 
 from worker.clients.qdrant_service import QdrantService
-from worker.process_document import process_document  # Task registrieren
 
 celery_app = Celery(
     "worker",
@@ -19,9 +18,12 @@ celery_app.conf.update(
     task_acks_late=True,
     worker_prefetch_multiplier=1,
     task_routes={ 
-        "src.modules.document.workers.*": {"queue": "documents"}, # if called funcion is in relative path to key, task should go to documents queue
+        "worker.process_document.*": {"queue": "documents"}, # if called funcion is in relative path to key, task should go to documents queue
     }
 )
+
+celery_app.autodiscover_tasks(['worker.tasks'])
+
 
 # cache qdrant_service instance in get_qdrant_service function 
 @lru_cache()
@@ -35,4 +37,5 @@ def get_qdrant_service():
 def init_models(**kwargs):
     get_qdrant_service()
 
-from worker import process_document
+
+#from worker.process_document import process_document

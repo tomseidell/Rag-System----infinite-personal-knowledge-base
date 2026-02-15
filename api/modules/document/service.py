@@ -1,6 +1,6 @@
 import uuid
 from fastapi import UploadFile
-from api.modules.document.model import Document
+from shared.modules.document.model import Document
 from api.modules.document.repository import DocumentRepository
 import hashlib
 from api.modules.document.schemas import DocumentCreate, GetDocuments
@@ -21,6 +21,9 @@ from api.clients.qdrant.service import AsyncQdrantService
 from api.modules.chunk.service import ChunkServiceAsync
 
 import base64
+
+from worker.celery_app import celery_app
+
 
 
 
@@ -108,7 +111,10 @@ class DocumentService:
         db_document = await self.document_repository.create_document(document)
 
         encoded_content = base64.b64encode(content).decode('utf-8')
-        process_document.delay(content=encoded_content, document_id=db_document.id, user_id = user_id, filename=name, content_type=content_type)
+
+        celery_app.send_task("process_document", args=[ encoded_content,db_document.id, user_id, name, content_type ])
+
+        #process_document.delay(content=encoded_content, document_id=db_document.id, user_id = user_id, filename=name, content_type=content_type)
 
         return db_document
 

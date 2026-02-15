@@ -1,6 +1,6 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import SQLAlchemyError, NoResultFound
-from api.modules.document.model import Document
+from shared.modules.document.model import Document
 from sqlalchemy import select, delete
 from shared.core.exceptions import DatabaseException, NotFoundException
 from api.modules.document.exceptions import DocumentNotFoundException, DocumentAlreadyExistsException

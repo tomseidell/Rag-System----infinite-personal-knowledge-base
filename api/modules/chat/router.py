@@ -1,12 +1,12 @@
 from fastapi import APIRouter, Depends, Response 
-from app.modules.chat.schemas import ChatMessageResponse
-from app.modules.chat.dependencies import get_chat_service
-from app.modules.chat.service import ChatService
-from app.modules.user.dependencies import get_current_user_id
+from api.modules.chat.schemas import ChatMessageResponse
+from api.modules.chat.dependencies import get_chat_service
+from api.modules.chat.service import ChatService
+from api.modules.user.dependencies import get_current_user_id
 from fastapi.responses import StreamingResponse
 
 
-from app.modules.chat.schemas import ChatRequest
+from api.modules.chat.schemas import ChatRequest
 
 router = APIRouter()
 

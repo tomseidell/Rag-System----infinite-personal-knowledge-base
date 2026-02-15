@@ -7,7 +7,8 @@ from celery.exceptions import SoftTimeLimitExceeded
 from shared.database import SyncSessionLocal
 from shared.modules.chunk.model import Chunk
 
-from worker.celery_app import celery_app
+from celery import shared_task  # ← statt celery_app
+
 from worker.chunk.chunk_repository import ChunkRepositorySync
 from worker.chunk.chunk_service import ChunkServiceSync
 
@@ -22,7 +23,7 @@ from worker.clients.ollama_service import OllamaService
 logger = logging.getLogger(__name__)
 
 
-@celery_app.task(
+@shared_task(
     autoretry_for=(OllamaException, QdrantException, StorageException), # if exception occurs, celery re- adds task to redis to perform retry
     max_retries=3,
     bind=True,
