@@ -1,24 +1,24 @@
 import uuid
 from fastapi import UploadFile
-from app.modules.document.model import Document
-from app.modules.document.repository import DocumentRepository
+from api.modules.document.model import Document
+from api.modules.document.repository import DocumentRepository
 import hashlib
-from app.modules.document.schemas import DocumentCreate, GetDocuments
+from api.modules.document.schemas import DocumentCreate, GetDocuments
 from pathlib import Path
 import asyncio
 from sqlalchemy.ext.asyncio import AsyncSession
 
 
-from app.core.exceptions import InputError, NotFoundException
+from shared.core.exceptions import InputError, NotFoundException
 
-from app.clients.storage.service import StorageService
-from app.modules.user.repository import UserRepository
+from api.clients.storage.service import StorageService
+from api.modules.user.repository import UserRepository
 
 from worker.process_document import process_document
 
-from app.clients.qdrant.service import AsyncQdrantService
+from api.clients.qdrant.service import AsyncQdrantService
 
-from app.modules.chunk.dependencies import ChunkServiceAsync
+from api.modules.chunk.service import ChunkServiceAsync
 
 import base64
 
@@ -112,12 +112,14 @@ class DocumentService:
 
         return db_document
 
+
     async def get_document(self, user_id:int, document_id:int) -> tuple[bytes, str, str]:
         document = await self.document_repository.get_document(user_id=user_id, document_id=document_id)
         if document is None:
             raise NotFoundException("document")
         content = self.storage.get_file(storage_path=document.storage_path)
         return content, document.original_filename, document.file_type
+
 
     async def delete_document(self, user_id:int, document_id:int) ->None:
         try:

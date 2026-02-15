@@ -4,14 +4,14 @@ from fastapi.middleware.cors import CORSMiddleware
 import sys
 from pathlib import Path
 from contextlib import asynccontextmanager
-from src.core.middleware.rate_limit import rate_limit_middleware
+from api.middlewares.rate_limit import rate_limit_middleware
 
 
 ROOT_DIR = Path(__file__).parent.parent
 sys.path.insert(0, str(ROOT_DIR))
-from src.core.exception_handlers import register_exception_handlers
-from src.clients.qdrant.dependencies import get_qdrant_service
-from src.routes import router as routes
+from shared.core.exception_handlers import register_exception_handlers
+from api.clients.qdrant.dependencies import get_qdrant_service
+from api.routes import router as routes
 
 
 @asynccontextmanager

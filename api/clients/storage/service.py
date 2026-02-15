@@ -1,10 +1,10 @@
 from fastapi import HTTPException
 from google.cloud import storage
-from app.config import settings
+from shared.config import settings
 import logging
-from app.clients.storage.exceptions import StorageException
+from api.clients.storage.exceptions import StorageException
 from google.cloud.exceptions import GoogleCloudError, NotFound
-from app.core.exceptions import NotFoundException
+from shared.core.exceptions import NotFoundException
 
 logger = logging.getLogger(__name__)
 

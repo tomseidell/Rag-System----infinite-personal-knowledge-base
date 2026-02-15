@@ -2,7 +2,7 @@ import bcrypt
 from datetime import datetime, timedelta, timezone 
 from fastapi import HTTPException
 import jwt
-from app.config import settings
+from shared.config import settings
 
 
 

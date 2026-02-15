@@ -1,22 +1,22 @@
 from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession  # ← AsyncSession!
-from app.modules.document.repository import DocumentRepository
-from app.modules.user.repository import UserRepository
-from app.modules.document.service import DocumentService
-from app.database import get_db
+from api.modules.document.repository import DocumentRepository
+from api.modules.user.repository import UserRepository
+from api.modules.document.service import DocumentService
+from shared.database import get_db
 
 from fastapi import Depends
 
-from app.clients.storage.service import StorageService
-from app.clients.storage.dependencies import get_storage_service
+from api.clients.storage.service import StorageService
+from api.clients.storage.dependencies import get_storage_service
 
-from app.clients.qdrant.service import AsyncQdrantService
-from app.clients.qdrant.dependencies import get_qdrant_service
+from api.clients.qdrant.service import AsyncQdrantService
+from api.clients.qdrant.dependencies import get_qdrant_service
 
-from app.modules.user.dependencies import get_user_repository
+from api.modules.user.dependencies import get_user_repository
 
-from app.modules.chunk.service import ChunkServiceAsync
-from app.modules.chunk.dependencies import get_chunk_service_async
+from api.modules.chunk.service import ChunkServiceAsync
+from api.modules.chunk.dependencies import get_chunk_service_async
 
 
 

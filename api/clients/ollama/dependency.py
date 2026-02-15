@@ -1,4 +1,4 @@
-from app.clients.ollama.service import OllamaServiceAsync
+from api.clients.ollama.service import OllamaServiceAsync
 from functools import lru_cache
 
 @lru_cache()

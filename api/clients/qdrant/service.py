@@ -1,13 +1,11 @@
-from qdrant_client.models import PointStruct, PointIdsList, ExtendedPointId
-from qdrant_client.models import Distance, VectorParams
-from qdrant_client import QdrantClient, AsyncQdrantClient
-from app.modules.chunk.model import Chunk
+from qdrant_client.models import PointIdsList, ExtendedPointId
+from qdrant_client import AsyncQdrantClient
 import os 
 from dataclasses import dataclass
-from app.clients.qdrant.exceptions import QdrantException
+from api.clients.qdrant.exceptions import QdrantException
 import logging 
 from qdrant_client import models
-from fastembed import SparseEmbedding, SparseTextEmbedding # embedding modell built by qdrant
+from fastembed import SparseTextEmbedding # embedding modell built by qdrant
 import gc
 import time
 

@@ -1,4 +1,4 @@
-from app.clients.storage.service import StorageService
+from api.clients.storage.service import StorageService
 from functools import lru_cache
 
 

@@ -1,6 +1,6 @@
 from shared.modules.chunk.model import Chunk
 
-from worker.repositories.chunk_repository import ChunkRepositorySync
+from worker.chunk.chunk_repository import ChunkRepositorySync
 
 
 class ChunkServiceSync:

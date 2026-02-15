@@ -1,11 +1,11 @@
 from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession  # ← AsyncSession!
-from app.database import get_db
-from app.modules.user.repository import UserRepository
-from app.modules.user.service import UserService
+from shared.database import get_db
+from api.modules.user.repository import UserRepository
+from api.modules.user.service import UserService
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
-from app.modules.user.utils import decode_access_token
+from api.modules.user.utils import decode_access_token
 
 
 def get_user_repository(db: AsyncSession = Depends(get_db)) -> UserRepository:

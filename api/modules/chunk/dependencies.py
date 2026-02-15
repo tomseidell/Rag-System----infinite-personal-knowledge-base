@@ -1,8 +1,8 @@
 from sqlalchemy.ext.asyncio import AsyncSession  # ← AsyncSession!
-from app.database import get_db
+from shared.database import get_db
 from fastapi import Depends
-from app.modules.chunk.repository import ChunkRepository
-from app.modules.chunk.service import ChunkServiceAsync
+from api.modules.chunk.repository import ChunkRepository
+from api.modules.chunk.service import ChunkServiceAsync
 
 
 def get_chunk_repository(db: AsyncSession = Depends(get_db)):

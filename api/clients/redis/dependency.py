@@ -1,4 +1,4 @@
-from app.clients.redis.service import RedisService
+from api.clients.redis.service import RedisService
 from functools import lru_cache
 
 

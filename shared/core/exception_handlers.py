@@ -1,13 +1,14 @@
 from fastapi import Request, status
 from fastapi.responses import JSONResponse
-from app.modules.document.exceptions import DocumentAlreadyExistsException, DocumentNotFoundException
-from app.core.exceptions import DatabaseException, InputError, NotFoundException
-from app.clients.storage.exceptions import StorageException
-from app.clients.qdrant.exceptions import QdrantException
+from shared.modules.document.exceptions import DocumentNotFoundException
+from api.modules.document.exceptions import DocumentAlreadyExistsException
+from shared.core.exceptions import DatabaseException, InputError, NotFoundException
+from api.clients.storage.exceptions import StorageException
+from api.clients.qdrant.exceptions import QdrantException
 
 import logging
 
-from app.modules.user.exceptions import InvalidCredentialsException, UserAlreadyExistsException, UserNotFoundException
+from api.modules.user.exceptions import InvalidCredentialsException, UserAlreadyExistsException, UserNotFoundException
 
 logger = logging.getLogger(__name__)
 

@@ -1,7 +1,7 @@
-from app.clients.ollama.service import OllamaServiceAsync
-from app.clients.qdrant.service import AsyncQdrantService   
-from app.modules.document.service import DocumentService
-from app.clients.redis.service import RedisService
+from api.clients.ollama.service import OllamaServiceAsync
+from api.clients.qdrant.service import AsyncQdrantService   
+from api.modules.document.service import DocumentService
+from api.clients.redis.service import RedisService
 import hashlib
 import json
 

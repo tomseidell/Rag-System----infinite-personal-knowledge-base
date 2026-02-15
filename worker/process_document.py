@@ -6,13 +6,13 @@ from celery.exceptions import SoftTimeLimitExceeded
 
 from shared.database import SyncSessionLocal
 from shared.modules.chunk.model import Chunk
-from worker.utils.document.log_memory import log_memory
-from worker.utils.document.pdf_processing import extract_text_from_pdf
-from worker.utils.document.split_text_to_chunks import split_text
 
 from worker.celery_app import celery_app
-from worker.repositories import ChunkRepositorySync, DocumentRepositorySync
-from worker.services import ChunkServiceSync
+from worker.chunk.chunk_repository import ChunkRepositorySync
+from worker.chunk.chunk_service import ChunkServiceSync
+
+from worker.document.document_repository import DocumentRepositorySync
+from worker.document.document_service import DocumentService
 
 from shared.core.exceptions import OllamaException, QdrantException, StorageException
 from worker.clients.storage_service import StorageService
@@ -31,7 +31,6 @@ logger = logging.getLogger(__name__)
     retry_backoff = True # increase time between retries exponentially 
 )
 def process_document(self: Task, content: bytes, document_id: int, user_id: int, filename: str, content_type: str):
-    log_memory("Task Start")
     db = SyncSessionLocal()
     storage_service = StorageService()
     qdrant_service = QdrantService()
@@ -39,29 +38,30 @@ def process_document(self: Task, content: bytes, document_id: int, user_id: int,
     chunk_repo = ChunkRepositorySync(db=db)
     chunk_service = ChunkServiceSync(repo=chunk_repo)
     document_repo = DocumentRepositorySync(db=db)
-    log_memory("After Services Init")
+    document_service = DocumentService(repository=document_repo)
+    document_service.log_memory("After Services Init")
 
     storage_path = None
     chunk_ids = []
 
     try:
         logger.info(f"Processing document {document_id} ({filename})")
-        log_memory(f"Content received ({len(content)} bytes)")
+        document_service.log_memory(f"Content received ({len(content)} bytes)")
 
-        text = extract_text_from_pdf(content=content)
-        log_memory(f"After Text Extraction ({len(text)} chars)")
+        text = document_service.extract_text_from_pdf(content=content)
+        document_service.log_memory(f"After Text Extraction ({len(text)} chars)")
 
-        chunks = split_text(text)
-        log_memory(f"After Chunking ({len(chunks)} chunks)")
+        chunks = document_service.split_text(text)
+        document_service.log_memory(f"After Chunking ({len(chunks)} chunks)")
 
         # remove variable to keep ram efficient 
         del text
         gc.collect()
-        log_memory("After Text Cleanup")
+        document_service.log_memory("After Text Cleanup")
         
         # create dense embeddings 
         dense_embeddings = ollama_service.embed_text(chunks=chunks)
-        log_memory(f"After Embeddings ({len(dense_embeddings)} vectors)")
+        document_service.log_memory(f"After Embeddings ({len(dense_embeddings)} vectors)")
         
         # save chunks to database
         chunk_objects: list[Chunk] = chunk_service.create_chunks_from_text(
@@ -69,7 +69,7 @@ def process_document(self: Task, content: bytes, document_id: int, user_id: int,
             user_id=user_id, 
             document_id=document_id
         )
-        log_memory(f"After saving chunks to db ({len(chunk_objects)} objects)")
+        document_service.log_memory(f"After saving chunks to db ({len(chunk_objects)} objects)")
 
         
         # create sparse embeddings and save chunks in vector db
@@ -80,13 +80,13 @@ def process_document(self: Task, content: bytes, document_id: int, user_id: int,
 
         del chunks
         gc.collect()
-        log_memory("After Chunks Cleanup")
+        document_service.log_memory("After Chunks Cleanup")
 
         chunk_ids = qdrant_insert_result.chunk_ids
-        log_memory(f"After Qdrant Insert ({len(chunk_ids)} inserted)")
+        document_service.log_memory(f"After Qdrant Insert ({len(chunk_ids)} inserted)")
         del dense_embeddings, chunk_objects
         gc.collect()
-        log_memory("After Embeddings Cleanup")
+        document_service.log_memory("After Embeddings Cleanup")
         
         # upload file to gcp bucket 
         storage_path = storage_service.upload_file(
@@ -95,12 +95,12 @@ def process_document(self: Task, content: bytes, document_id: int, user_id: int,
             user_id=user_id,
             content_type=content_type
         )
-        log_memory("After Storage Upload")
+        document_service.log_memory("After Storage Upload")
         
         # delete the bytes 
         del content
         gc.collect()
-        log_memory("After Content Cleanup")
+        document_service.log_memory("After Content Cleanup")
         
         # mark document as finished in db documents table 
         document_repo.finish_document(
@@ -109,10 +109,10 @@ def process_document(self: Task, content: bytes, document_id: int, user_id: int,
             storage_path=storage_path, 
             chunk_count=len(chunk_ids)
         )
-        log_memory("After DB Update")
+        document_service.log_memory("After DB Update")
         
         logger.info(f"Document {document_id} processed successfully!")
-        log_memory("Task Success")
+        document_service.log_memory("Task Success")
 
     # retry for 3 error types
     except (OllamaException, QdrantException, StorageException) as e:
@@ -164,7 +164,7 @@ def process_document(self: Task, content: bytes, document_id: int, user_id: int,
     finally:
         db.close()
         gc.collect()
-        log_memory("Task End")
+        document_service.log_memory("Task End")
 
 
 

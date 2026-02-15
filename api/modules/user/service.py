@@ -3,10 +3,10 @@ from fastapi import Depends, HTTPException
 from pydantic import EmailStr
 from sqlalchemy.ext.asyncio import AsyncSession  # ← AsyncSession!
 from sqlalchemy import select  # ← select statt query!
-from app.modules.user.model import User
-from app.modules.user.schemas import TokenResponse, UserLogin, UserRegistration
-from app.modules.user.utils import create_access_token, create_refresh_token, hash_password, verify_password
-from app.modules.user.repository import UserRepository
+from shared.modules.user.model import User
+from api.modules.user.schemas import TokenResponse, UserLogin, UserRegistration
+from api.modules.user.utils import create_access_token, create_refresh_token, hash_password, verify_password
+from api.modules.user.repository import UserRepository
 
 
 

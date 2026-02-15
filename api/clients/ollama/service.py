@@ -1,6 +1,6 @@
 import ollama
 import os
-from app.clients.ollama.exceptions import OllamaException
+from api.clients.ollama.exceptions import OllamaException
 import logging
 from typing import AsyncGenerator
 import time

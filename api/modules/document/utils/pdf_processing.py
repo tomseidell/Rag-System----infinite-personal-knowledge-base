@@ -1,5 +1,5 @@
 import base64
-from app.modules.document.exceptions import PDFProcessingException
+from api.modules.document.exceptions import PDFProcessingException
 import logging
 import pymupdf
 import re

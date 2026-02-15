@@ -1,10 +1,10 @@
 from fastapi import APIRouter, Depends, UploadFile, Response
 
-from app.modules.document.dependencies import get_document_service
-from app.modules.document.schemas import DocumentResponse, GetDocuments
-from app.modules.document.service import DocumentService
-from app.modules.user.dependencies import get_current_user_id
-from app.modules.user.model import User
+from api.modules.document.dependencies import get_document_service
+from api.modules.document.schemas import DocumentResponse, GetDocuments
+from api.modules.document.service import DocumentService
+from api.modules.user.dependencies import get_current_user_id
+from shared.modules.user.model import User
 
 
 router = APIRouter()

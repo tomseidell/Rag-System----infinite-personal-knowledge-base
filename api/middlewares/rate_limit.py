@@ -1,5 +1,5 @@
 from fastapi import Request
-from app.clients.redis.dependency import get_redis_service
+from api.clients.redis.dependency import get_redis_service
 from fastapi.responses import JSONResponse
 
 async def rate_limit_middleware(request: Request, call_next): # call next gets automatically handled by fast api

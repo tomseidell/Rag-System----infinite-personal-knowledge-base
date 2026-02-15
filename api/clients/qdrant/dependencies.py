@@ -1,4 +1,4 @@
-from app.clients.qdrant.service import AsyncQdrantService
+from api.clients.qdrant.service import AsyncQdrantService
 from functools import lru_cache
 
 

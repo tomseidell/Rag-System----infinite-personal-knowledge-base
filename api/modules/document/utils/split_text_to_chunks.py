@@ -1,5 +1,5 @@
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from app.modules.document.exceptions import TextSplittingException
+from api.modules.document.exceptions import TextSplittingException
 import logging
 
 logger = logging.getLogger(__name__)
