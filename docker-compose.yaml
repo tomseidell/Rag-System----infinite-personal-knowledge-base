@@ -4,11 +4,13 @@ services:
       ports:
         - "6379:6379"
     api:
-      build: . # Dockerfile from same folder 
+      build:
+        context: .
+        dockerfile: api/Dockerfile # Dockerfile from api folder 
       ports:
         - "8000:8000"
       volumes: 
-        - .:/app # take all changes from lokal folder and map changes to running docker container (app folder)
+        - .:/app # take all changes from lokal folder and map changes to running docker container
       depends_on:
         - redis
         - db
@@ -20,9 +22,11 @@ services:
         - QDRANT_URL=http://vector:6333
         - OLLAMA_HOST=http://host.docker.internal:11434
         - REDIS_URL=redis://redis:6379
-      command: uvicorn src.main:app --host 0.0.0.0 --port 8000 --reload # overrite cmd from dockerfile
+      command: uvicorn api.main:app --host 0.0.0.0 --port 8000 --reload # overrite cmd from dockerfile
     worker:
-      build: .
+      build:
+        context: .
+        dockerfile: worker/Dockerfile
       depends_on:
         - redis
         - db
@@ -37,7 +41,7 @@ services:
 
       volumes:
       - .:/app
-      command: celery -A src.core.celery_app worker --loglevel=info --queues=documents --concurrency=1 # 1 task per worker
+      command: celery -A worker.celery_app worker --loglevel=info --queues=documents --concurrency=1 # 1 task per worker
     db:
       image: postgres:15-alpine
       environment:
