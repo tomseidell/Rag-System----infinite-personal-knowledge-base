@@ -2,13 +2,13 @@ import os # access to system
 import sys # enables configuration of python search path
 from dotenv import load_dotenv # access to env 
 
-from src.config import settings # import our settings class instance 
+from shared.config import settings # import our settings class instance 
 
 # Importieren der Datenbankbasis und Modelle
-from src.database import Base # import our base class
-from src.modules.user.model import User # import our user model
-from src.modules.chunk.model import Chunk
-from src.modules.document.model import Document 
+from shared.database import Base # import our base class
+from shared.modules.user.model import User # import our user model
+from shared.modules.chunk.model import Chunk
+from shared.modules.document.model import Document 
 
 
 
