@@ -6,7 +6,7 @@ services:
     api:
       build:
         context: .
-        dockerfile: api/Dockerfile # Dockerfile from api folder 
+        dockerfile: api/Dockerfile 
       ports:
         - "8000:8000"
       volumes: 
@@ -25,16 +25,16 @@ services:
       command: uvicorn api.main:app --host 0.0.0.0 --port 8000 --reload # overrite cmd from dockerfile
     frontend:
       build:
-        context: .
-        dockerfile: frontend/Dockerfile.dev
+        context: ./frontend
+        dockerfile: Dockerfile.dev
       ports:
         - "5173:5173"
       volumes:
         - ./frontend:/app
         - /app/node_modules
       environment:
-        - VITE_ENVIRONMENT =dev
-        - VITE_BACKEND_URL =http://localhost:8000
+        - VITE_ENVIRONMENT=dev
+        - VITE_BACKEND_URL=http://localhost:8000
       depends_on:
         - api
       command: npm run dev -- --host 0.0.0.0
