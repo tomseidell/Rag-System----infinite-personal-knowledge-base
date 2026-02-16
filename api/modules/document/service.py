@@ -14,7 +14,7 @@ from shared.core.exceptions import InputError, NotFoundException
 from api.clients.storage.service import StorageService
 from api.modules.user.repository import UserRepository
 
-from worker.process_document import process_document
+#from worker.tasks.process_document import process_document
 
 from api.clients.qdrant.service import AsyncQdrantService
 

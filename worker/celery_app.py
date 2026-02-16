@@ -18,11 +18,11 @@ celery_app.conf.update(
     task_acks_late=True,
     worker_prefetch_multiplier=1,
     task_routes={ 
-        "worker.process_document.*": {"queue": "documents"}, # if called funcion is in relative path to key, task should go to documents queue
+        "process_document": {"queue": "documents"}, # if called funcion is in relative path to key, task should go to documents queue
     }
 )
 
-celery_app.autodiscover_tasks(['worker.tasks'])
+celery_app.autodiscover_tasks(['worker.tasks']) # let celery automatically register all tasks in given path
 
 
 # cache qdrant_service instance in get_qdrant_service function 
@@ -38,4 +38,4 @@ def init_models(**kwargs):
     get_qdrant_service()
 
 
-#from worker.process_document import process_document
+from worker.tasks.process_document import process_document
