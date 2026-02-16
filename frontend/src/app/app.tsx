@@ -1,8 +1,13 @@
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { Chat } from "../pages/chat/Chat";
+
 function App() {
   return (
-    <main>
-      <h1>Hallo</h1>
-    </main>
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<Chat />} />
+      </Routes>
+    </BrowserRouter>
   );
 }
 
