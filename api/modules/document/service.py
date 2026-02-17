@@ -12,7 +12,7 @@ import asyncio
 
 from shared.core.exceptions import InputError, NotFoundException
 
-from api.clients.storage.service import StorageService
+from api.clients.storage.service import AsyncStorageService
 from api.modules.user.repository import UserRepository
 
 #from worker.tasks.process_document import process_document
@@ -29,7 +29,7 @@ from worker.celery_app import celery_app
 
 
 class DocumentService:
-    def __init__(self, document_repository:DocumentRepository, storage:StorageService, user_repository:UserRepository, qdrant_service:AsyncQdrantService, chunk_service:ChunkServiceAsync, db:AsyncSession):
+    def __init__(self, document_repository:DocumentRepository, storage:AsyncStorageService, user_repository:UserRepository, qdrant_service:AsyncQdrantService, chunk_service:ChunkServiceAsync, db:AsyncSession):
         self.document_repository = document_repository
         self.storage = storage
         self.user_repository = user_repository
@@ -132,7 +132,7 @@ class DocumentService:
         document = await self.document_repository.get_document(user_id=user_id, document_id=document_id)
         if document is None:
             raise NotFoundException("document")
-        content = self.storage.get_file(storage_path=document.storage_path)
+        content = await self.storage.get_file(storage_path=document.storage_path)
         return content, document.original_filename, document.file_type
 
 
@@ -151,8 +151,7 @@ class DocumentService:
                 tasks.append(self.qdrant.delete_many_chunks(chunk_ids=chunks_ids))
             
             if document.storage_path:
-                tasks.append(asyncio.to_thread(self.storage.delete_file, document.storage_path))
-
+                tasks.append(self.storage.delete_file(document.storage_path))
                 
             await asyncio.gather(*tasks)
 
