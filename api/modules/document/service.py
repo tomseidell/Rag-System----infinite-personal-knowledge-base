@@ -7,11 +7,12 @@ from api.modules.document.schemas import DocumentCreate, GetDocuments
 from pathlib import Path
 import asyncio
 from sqlalchemy.ext.asyncio import AsyncSession
+import asyncio
 
 
 from shared.core.exceptions import InputError, NotFoundException
 
-from api.clients.storage.service import StorageService
+from api.clients.storage.service import AsyncStorageService
 from api.modules.user.repository import UserRepository
 
 #from worker.tasks.process_document import process_document
@@ -28,7 +29,7 @@ from worker.celery_app import celery_app
 
 
 class DocumentService:
-    def __init__(self, document_repository:DocumentRepository, storage:StorageService, user_repository:UserRepository, qdrant_service:AsyncQdrantService, chunk_service:ChunkServiceAsync, db:AsyncSession):
+    def __init__(self, document_repository:DocumentRepository, storage:AsyncStorageService, user_repository:UserRepository, qdrant_service:AsyncQdrantService, chunk_service:ChunkServiceAsync, db:AsyncSession):
         self.document_repository = document_repository
         self.storage = storage
         self.user_repository = user_repository
@@ -59,6 +60,9 @@ class DocumentService:
         
         return f"{unique_id}_{name}{ext}" 
 
+    def _encode_content_base64(self, content:bytes) ->str:
+        encoded_bytes = base64.b64encode(content)
+        return encoded_bytes.decode("utf-8")
 
 
     async def upload_document(self, user_id: int, title: str| None, file:UploadFile) -> Document:
@@ -77,8 +81,17 @@ class DocumentService:
         
         content_type = file.content_type or "application/octet-stream" # fallback undefined content type
 
+        source_type = self._get_file_extension(filename=file.filename)
+        name = self._generate_unique_filename(filename=file.filename)
+
+        if source_type != "pdf":
+            raise InputError(
+                operation="upload_document",
+                detail="inserted file is not pdf"
+            )
+
         # create unique hash acting as identifier for each document 
-        content_hash = self._calculate_hash(content=content)
+        content_hash = await asyncio.to_thread(self._calculate_hash, content) # asyncio to move task to different thread
 
         # check if document with hash is already stored in db
         existing = await self.document_repository.check_for_existing_hash(user_id=user_id, content_hash=content_hash)
@@ -89,14 +102,7 @@ class DocumentService:
         if not title: # if no title provided, create title automatically based on filename
             title = self._create_title_from_file(filename=file.filename)
 
-        source_type = self._get_file_extension(filename=file.filename)
-        name = self._generate_unique_filename(filename=file.filename)
 
-        if source_type != "pdf":
-            raise InputError(
-                operation="upload_document",
-                detail="inserted file is not pdf"
-            )
 
         document = DocumentCreate(
             user_id = user_id,
@@ -110,12 +116,15 @@ class DocumentService:
 
         db_document = await self.document_repository.create_document(document)
 
-        encoded_content = base64.b64encode(content).decode('utf-8')
+        # change binary image format to base64
+        encoded_content = await asyncio.to_thread(self._encode_content_base64, content)
 
-        celery_app.send_task("process_document", args=[ encoded_content,db_document.id, user_id, name, content_type ])
-
-        #process_document.delay(content=encoded_content, document_id=db_document.id, user_id = user_id, filename=name, content_type=content_type)
-
+        # call celery worker task
+        await asyncio.to_thread(
+            celery_app.send_task,
+            "process_document",
+            args=[encoded_content, db_document.id, user_id, name, content_type]
+        )
         return db_document
 
 
@@ -123,7 +132,7 @@ class DocumentService:
         document = await self.document_repository.get_document(user_id=user_id, document_id=document_id)
         if document is None:
             raise NotFoundException("document")
-        content = self.storage.get_file(storage_path=document.storage_path)
+        content = await self.storage.get_file(storage_path=document.storage_path)
         return content, document.original_filename, document.file_type
 
 
@@ -142,8 +151,7 @@ class DocumentService:
                 tasks.append(self.qdrant.delete_many_chunks(chunk_ids=chunks_ids))
             
             if document.storage_path:
-                tasks.append(asyncio.to_thread(self.storage.delete_file, document.storage_path))
-
+                tasks.append(self.storage.delete_file(document.storage_path))
                 
             await asyncio.gather(*tasks)
 
