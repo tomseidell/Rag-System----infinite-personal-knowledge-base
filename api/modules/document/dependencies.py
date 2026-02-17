@@ -7,7 +7,7 @@ from shared.database import get_db
 
 from fastapi import Depends
 
-from api.clients.storage.service import StorageService
+from api.clients.storage.service import AsyncStorageService
 from api.clients.storage.dependencies import get_storage_service
 
 from api.clients.qdrant.service import AsyncQdrantService
@@ -25,7 +25,7 @@ def get_document_repository(db: AsyncSession = Depends(get_db)) -> DocumentRepos
 
 def get_document_service(
      document_repo: DocumentRepository = Depends(get_document_repository),
-     storage:StorageService = Depends(get_storage_service),
+     storage:AsyncStorageService = Depends(get_storage_service),
      user_repo:UserRepository = Depends(get_user_repository),
      qdrant_service:AsyncQdrantService = Depends(get_qdrant_service),
      chunk_service:ChunkServiceAsync = Depends(get_chunk_service_async),
