@@ -6,7 +6,7 @@ const baseUrl = import.meta.env.VITE_BACKEND_URL;
 const authService = new AuthService();
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
-  const res = await fetch(`${baseUrl}/${path}`, {
+  const res = await fetch(`${baseUrl}${path}`, {
     ...options,
     headers: {
       "Content-Type": "application/json",
@@ -15,6 +15,8 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
       ...options?.headers,
     },
   });
+  console.log("response", res)
+
   // if client is unauthorized => access token outdated
   if (res.status == 401) {
     // get new access token with refresh token
