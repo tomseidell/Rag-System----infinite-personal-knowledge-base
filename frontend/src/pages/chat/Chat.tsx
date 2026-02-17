@@ -9,7 +9,7 @@ export function Chat() {
   const [textInput, setTextInput] = useState("");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
 
-  const { mutate: sendMessage, isPending } = useSendMessage();
+  const { mutate: sendMessage, isPending, isError } = useSendMessage();
 
   const handleSend = () => {
     // if input field is empty
@@ -19,6 +19,7 @@ export function Chat() {
     // show message in chat
     setMessages((prev) => [...prev, { role: "user", content: textInput }]);
 
+    console.log("wird gecalled")
     sendMessage(textInput, {
       onSuccess: (data) => {
         setMessages((prev) => [
@@ -36,9 +37,12 @@ export function Chat() {
       {/* Header top right */}
       <Header />
 
-      {/* Chat Messages*/}
-      <div className="mt-2 flex-1 flex justify-center">
+      <div className="mt-2 flex-1 flex justify-center"> 
+        {isError? <div>Fehler aufgetreten </div> : ""}
+
         <div className="flex flex-col w-[45%] rounded-xl  content-between justify-between">
+
+          {/* Chat Messages*/}
           <div>
             {messages.map((message) =>
               message.role == "user" ? (
@@ -48,6 +52,7 @@ export function Chat() {
               ),
             )}
           </div>
+
           {/* Chat input */}
           <ChatInput
             value={textInput}
@@ -55,6 +60,7 @@ export function Chat() {
             onSend={handleSend}
             disabled={isPending}
           />
+
         </div>
       </div>
     </div>
