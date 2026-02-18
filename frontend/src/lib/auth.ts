@@ -20,6 +20,15 @@ export class AuthService {
     localStorage.removeItem("refreshToken");
   }
 
+  // checks wether access token is still valid or expired
+  isAccessTokenValid(): boolean {
+    const expiry = localStorage.getItem("accessTokenExpiry");
+    if (!expiry) {
+      return false;
+    }
+    return Date.now() < parseInt(expiry);
+  }
+
   async tryRefreshToken(): Promise<boolean> {
     const refreshToken = this.getRefreshToken();
     if (!refreshToken) {
@@ -27,21 +36,21 @@ export class AuthService {
     }
 
     try {
-      const res = await fetch(`${baseUrl}/auth/refresh`, {
+      const res = await fetch(`${baseUrl}/user/refresh`, {
         method: "Post",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ refreshToken }),
+        body: JSON.stringify({ refresh_token: refreshToken }),
       });
 
-      if(!res.ok){
-        return false
+      if (!res.ok) {
+        return false;
       }
 
       const data = await res.json();
-      this.setAccessToken(data.accessToken)
-      return true
+      this.setAccessToken(data.accessToken);
+      return true;
     } catch {
-        return false
+      return false;
     }
   }
 }

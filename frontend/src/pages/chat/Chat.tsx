@@ -19,7 +19,7 @@ export function Chat() {
     // show message in chat
     setMessages((prev) => [...prev, { role: "user", content: textInput }]);
 
-    console.log("wird gecalled")
+    //console.log("wird gecalled");
     sendMessage(textInput, {
       onSuccess: (data) => {
         setMessages((prev) => [
@@ -37,18 +37,25 @@ export function Chat() {
       {/* Header top right */}
       <Header />
 
-      <div className="mt-2 flex-1 flex justify-center"> 
-        {isError? <div>Fehler aufgetreten </div> : ""}
+      <div className="mt-2 flex-1 flex justify-center">
+        {isError ? <div>Fehler aufgetreten </div> : ""}
 
         <div className="flex flex-col w-[45%] rounded-xl  content-between justify-between">
-
           {/* Chat Messages*/}
           <div>
             {messages.map((message) =>
               message.role == "user" ? (
-                <UserMessage role={message.role} content={message.content} />
+                <UserMessage
+                  key={message.content.slice(0, 4)}
+                  role={message.role}
+                  content={message.content}
+                />
               ) : (
-                <p>test</p>
+                <UserMessage
+                  key={message.content.slice(0, 4)}
+                  role={"assistant"}
+                  content={message.content}
+                />
               ),
             )}
           </div>
@@ -60,7 +67,6 @@ export function Chat() {
             onSend={handleSend}
             disabled={isPending}
           />
-
         </div>
       </div>
     </div>

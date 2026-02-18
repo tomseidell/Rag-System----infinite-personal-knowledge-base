@@ -5,8 +5,9 @@ from sqlalchemy.ext.asyncio import AsyncSession  # ← AsyncSession!
 from sqlalchemy import select  # ← select statt query!
 from shared.modules.user.model import User
 from api.modules.user.schemas import TokenResponse, UserLogin, UserRegistration
-from api.modules.user.utils import create_access_token, create_refresh_token, hash_password, verify_password
+from api.modules.user.utils import create_access_token, create_refresh_token, hash_password, verify_password, decode_refresh_token
 from api.modules.user.repository import UserRepository
+from api.modules.user.exceptions import UserNotFoundException, InvalidTokenException
 
 
 
@@ -70,6 +71,22 @@ class UserService:
         
 
     async def update_refresh_token(self, id:int, refresh_token:str) ->None:
-
         await self.user_repository.update_refresh_token(id, refresh_token)
 
+
+    async def handle_refresh(self, refresh_token:str):
+        user_id = decode_refresh_token(refresh_token)
+        db_user = await self.user_repository.get_user_by_id(id=user_id)
+        if not db_user:
+            raise UserNotFoundException(user_id)
+
+        if db_user.refresh_token != refresh_token:
+            raise InvalidTokenException()
+        
+        new_access_token = create_access_token(user_id)
+
+        new_refresh_token = create_refresh_token(user_id)
+
+        await self.update_refresh_token(user_id, new_refresh_token)
+
+        return TokenResponse(access_token=new_access_token, refresh_token=new_refresh_token, expires_in=1800) 

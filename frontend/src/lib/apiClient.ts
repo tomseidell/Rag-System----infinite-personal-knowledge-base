@@ -15,11 +15,13 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
       ...options?.headers,
     },
   });
-  console.log("response", res)
+  console.log("response", res);
 
   // if client is unauthorized => access token outdated
+  console.log("test");
   if (res.status == 401) {
     // get new access token with refresh token
+    console.log("wird aufgerufen");
     const refreshed = await authService.tryRefreshToken();
     // if valid access token was created, retry request
     if (refreshed) {
@@ -29,10 +31,15 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
     authService.removeTokens();
     throw redirect("/login");
   }
-  // catch response errors from api 
+  // catch response errors from api
   if (!res.ok) throw new Error(res.statusText);
-  
-  return res.json();
+
+  console.log("response is okay");
+
+  const text = await res.text(); // Erst als Text lesen
+  console.log("body", text); // Was kommt zurück?
+
+  return JSON.parse(text); // Dann parsen
 }
 
 export const apiClient = {
@@ -45,4 +52,40 @@ export const apiClient = {
     request<T>(path, { method: "PATCH", body: JSON.stringify(data) }),
 
   delete: <T>(path: string) => request<T>(path, { method: "DELETE" }),
+
+  stream: async (
+    path: string,
+    data: unknown,
+    onChunk: (text: string) => void,
+  ) => {
+    const res = await fetch(`${baseUrl}${path}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${authService.getAccessToken()}`,
+      },
+      body: JSON.stringify(data),
+    });
+
+    if (!res.ok) throw new Error(res.statusText);
+
+    const reader = res.body?.getReader();
+    const decoder = new TextDecoder();
+
+    while (reader) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      const chunk = decoder.decode(value);
+      const lines = chunk.split("\n");
+      for (const line of lines) {
+        if (line.startsWith("data: ")) {
+          const text = line.slice(6);
+          if (text !== "[DONE]") {
+            onChunk(text);
+          }
+        }
+      }
+    }
+  },
 };

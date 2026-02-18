@@ -8,7 +8,7 @@ from api.clients.qdrant.exceptions import QdrantException
 
 import logging
 
-from api.modules.user.exceptions import InvalidCredentialsException, UserAlreadyExistsException, UserNotFoundException
+from api.modules.user.exceptions import InvalidCredentialsException, UserAlreadyExistsException, UserNotFoundException, WrongTokenTypeException, InvalidTokenException
 
 logger = logging.getLogger(__name__)
 
@@ -99,6 +99,21 @@ def register_exception_handlers(app):
             content={"detail": exc.message}
         )
     
+    @app.exception_handler(WrongTokenTypeException)
+    async def wrong_token_handler(request:Request, exc:WrongTokenTypeException):
+        logger.warning("Invalid token type")
+        return JSONResponse(
+            status_code= status.HTTP_401_UNAUTHORIZED,
+            content={"detail": exc.message}
+        )
+    
+    @app.exception_handler(InvalidTokenException)
+    async def invalid_token_handler(request:Request, exc:InvalidTokenException):
+        logger.warning("Invalid token")
+        return JSONResponse(
+            status_code= status.HTTP_401_UNAUTHORIZED,
+            content={"detail": exc.message}
+        )    
 
     #document
     @app.exception_handler(DocumentNotFoundException)
