@@ -3,6 +3,7 @@ from datetime import datetime, timedelta, timezone
 from fastapi import HTTPException
 import jwt
 from shared.config import settings
+from api.modules.user.exceptions import InvalidTokenException, WrongTokenTypeException
 
 
 
@@ -76,8 +77,8 @@ def decode_refresh_token(token:str) ->int:
     try:
         payload = jwt.decode(token, settings.JWT_SECRET, algorithms=[settings.ALGORITHM])
         if payload.get("type") != "refresh":
-            raise HTTPException(401, "wrong token type")
+            raise WrongTokenTypeException()
         return payload["user_id"]
     except jwt.InvalidTokenError:
-        raise HTTPException(status_code=401, detail="Invalid token")
+        raise InvalidTokenException()
 
