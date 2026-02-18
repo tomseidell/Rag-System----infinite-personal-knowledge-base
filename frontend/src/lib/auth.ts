@@ -42,12 +42,15 @@ export class AuthService {
         body: JSON.stringify({ refresh_token: refreshToken }),
       });
 
+      console.log("response von refresh token: ", res);
+
       if (!res.ok) {
         return false;
       }
 
       const data = await res.json();
-      this.setAccessToken(data.accessToken);
+      this.setAccessToken(data.access_token);
+      this.setRefreshToken(data.refresh_token);
       return true;
     } catch {
       return false;
