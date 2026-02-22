@@ -8,8 +8,7 @@ class UserRegistration(BaseModel):
 
 
 class UserResponse(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
-    
+    model_config = ConfigDict(from_attributes=True) # lets pydantic convert ORM object to dict (which is required by fast api)
     id: int
     email: EmailStr
     full_name: str
