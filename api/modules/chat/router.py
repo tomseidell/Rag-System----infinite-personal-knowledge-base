@@ -17,4 +17,4 @@ async def postMessage(request:ChatRequest, current_user: int = Depends(get_curre
             yield f"data: {chunk}\n\n"
         yield "data: [DONE]\n\n" 
     
-    return StreamingResponse(generate(), media_type="text/event-stream") 
+    return StreamingResponse(content=generate(), media_type="text/event-stream") 

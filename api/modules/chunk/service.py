@@ -12,6 +12,6 @@ class ChunkServiceAsync():
         chunk_ids: list[ExtendedPointId] = [chunk.id for chunk in result]
         return chunk_ids
     
-    async def delete_chunks_for_doc(self, document_id:int, user_id:int):
-        result = await self.repository.delete_chunks_for_doc(document_id=document_id, user_id=user_id)
+    async def delete_chunks_for_doc(self, document_id:int, user_id:int) -> None:
+        await self.repository.delete_chunks_for_doc(document_id=document_id, user_id=user_id)
 

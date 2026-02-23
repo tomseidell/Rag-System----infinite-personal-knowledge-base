@@ -3,7 +3,7 @@ from fastapi import UploadFile
 from shared.modules.document.model import Document
 from api.modules.document.repository import DocumentRepository
 import hashlib
-from api.modules.document.schemas import DocumentCreate, GetDocuments
+from api.modules.document.schemas import DocumentCreate, PaginatedDocuments, DocumentResponse, DocumentContentResponse
 from pathlib import Path
 import asyncio
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -65,8 +65,8 @@ class DocumentService:
         return encoded_bytes.decode("utf-8")
 
 
-    async def upload_document(self, user_id: int, title: str| None, file:UploadFile) -> Document:
-        content = await file.read()#bytes
+    async def upload_document(self, user_id: int, title: str| None, file:UploadFile) -> DocumentResponse:
+        content = await file.read()#bytes, runs in separate threadpool
         if len(content) >= 10 * 1024 * 1024: #10mb max
             raise InputError(
                 operation="upload_document",
@@ -82,13 +82,14 @@ class DocumentService:
         content_type = file.content_type or "application/octet-stream" # fallback undefined content type
 
         source_type = self._get_file_extension(filename=file.filename)
-        name = self._generate_unique_filename(filename=file.filename)
 
         if source_type != "pdf":
             raise InputError(
                 operation="upload_document",
                 detail="inserted file is not pdf"
             )
+
+        name = self._generate_unique_filename(filename=file.filename)
 
         # create unique hash acting as identifier for each document 
         content_hash = await asyncio.to_thread(self._calculate_hash, content) # asyncio to move task to different thread
@@ -97,7 +98,7 @@ class DocumentService:
         existing = await self.document_repository.check_for_existing_hash(user_id=user_id, content_hash=content_hash)
 
         if existing: #do not save document if already existing 
-            return existing 
+            return DocumentResponse.model_validate(existing) 
 
         if not title: # if no title provided, create title automatically based on filename
             title = self._create_title_from_file(filename=file.filename)
@@ -125,15 +126,15 @@ class DocumentService:
             "process_document",
             args=[encoded_content, db_document.id, user_id, name, content_type]
         )
-        return db_document
+        return DocumentResponse.model_validate(db_document)
 
 
-    async def get_document(self, user_id:int, document_id:int) -> tuple[bytes, str, str]:
+    async def get_document(self, user_id:int, document_id:int) -> DocumentContentResponse:
         document = await self.document_repository.get_document(user_id=user_id, document_id=document_id)
         if document is None:
             raise NotFoundException("document")
         content = await self.storage.get_file(storage_path=document.storage_path)
-        return content, document.original_filename, document.file_type
+        return DocumentContentResponse(id=document.id, content=content, original_filename=document.original_filename, file_type=document.file_type, file_size=document.file_size, )
 
 
     async def delete_document(self, user_id:int, document_id:int) ->None:
@@ -166,12 +167,15 @@ class DocumentService:
             raise
 
 
-    async def get_documents(self, user_id:int, cursor:int | None)-> tuple[list[Document], int | None]:
-        result = await self.document_repository.get_documents(user_id, cursor)
-        return result
+    async def get_documents(self, user_id:int, cursor:int | None)-> PaginatedDocuments:
+        documents, cursor = await self.document_repository.get_documents(user_id, cursor)
+        return PaginatedDocuments(
+            documents=[DocumentResponse.model_validate(document) for document in documents],
+            next_cursor=cursor
+        )
     
 
-    async def get_document_name_and_id(self, user_id:int, document_id:int):
+    async def get_document_name_and_id(self, user_id:int, document_id:int)->tuple[int, str]:
         document = await self.document_repository.get_document(user_id=user_id, document_id=document_id)
         if document is None:
             raise NotFoundException("document")

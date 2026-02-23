@@ -4,7 +4,7 @@ from shared.modules.document.model import Document
 from sqlalchemy import select, delete
 from shared.core.exceptions import DatabaseException, NotFoundException
 from api.modules.document.exceptions import DocumentNotFoundException, DocumentAlreadyExistsException
-from api.modules.document.schemas import DocumentCreate, GetDocuments
+from api.modules.document.schemas import DocumentCreate
 
 
 class DocumentRepository:
@@ -89,7 +89,7 @@ class DocumentRepository:
             else:
                 next_cursor = None
             
-            return documents, next_cursor
+            return documents,next_cursor
             
         except SQLAlchemyError as e:
             raise DatabaseException(

@@ -2,6 +2,7 @@ from api.clients.ollama.service import OllamaServiceAsync
 from api.clients.qdrant.service import AsyncQdrantService   
 from api.modules.document.service import DocumentService
 from api.clients.redis.service import RedisService
+from api.modules.chat.schemas import ChatMessageResponse, Ressource
 import hashlib
 import json
 
@@ -39,18 +40,20 @@ class ChatService():
         sources: list[int] = [chunk.payload["document_id"] for chunk in chunk_infos if chunk.payload]
         sources = list(set(sources)) # only unique sources / unique documents as sources
 
-        ressources: list[dict] = []
+        ressources: list[Ressource] = []
         for source in sources:
             ressource = await self.document_service.get_document_name_and_id(user_id=user_id, document_id=source)
-            ressources.append({"id": ressource[0], "name": ressource[1]})
+            ressources.append(Ressource(id=ressource[0], name= ressource[1]))
 
 
-        chunks = []
+        chunks : list[str] = []
         async for chunk in self.ollama_service.create_message(texts=texts, user_input=message):
             chunks.append(chunk)
             yield chunk
+        # return ressources at the end, separately 
         yield ressources
 
+        # create new redis entry to cache response
         if not cached_response:
             full_response = "".join(chunks)
             await self.redis_service.set(cache_key, json.dumps({
