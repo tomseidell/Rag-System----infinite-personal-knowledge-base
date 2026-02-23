@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 
 from api.modules.user.dependencies import get_user_service
 from api.modules.user.schemas import TokenResponse, UserLogin, UserRegistration, UserResponse, RefreshRequest
@@ -13,8 +13,8 @@ async def register(user:UserRegistration, user_service:UserService = Depends(get
 
 
 @router.post("/login", status_code=200, response_model=TokenResponse)
-async def login(user:UserLogin, user_service:UserService = Depends(get_user_service)):
-    return await user_service.login_user(user)
+async def login(user_login:UserLogin, user_service:UserService = Depends(get_user_service)):
+    return await user_service.login_user(user_login)
 
 @router.post("/refresh", status_code=200, response_model=TokenResponse)
 async def refresh(refresh_request:RefreshRequest, user_service:UserService = Depends(get_user_service)):

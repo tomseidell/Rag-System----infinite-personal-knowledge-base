@@ -11,7 +11,7 @@ class UserRepository:
     def __init__(self, db: AsyncSession):
         self.db = db
 
-    async def create_user(self, full_name:str, email:EmailStr, hashed_password:str)-> User:
+    async def create_user(self, full_name:str, email:EmailStr, hashed_password:str) -> User:
         try:
             db_user = User(
                 full_name = full_name,
@@ -29,7 +29,6 @@ class UserRepository:
                 detail= str(e)
             )
 
-
     async def get_user_by_mail(self, email:EmailStr) -> User | None:
         try:
             stmt = select(User).where(User.email == email)
@@ -42,7 +41,6 @@ class UserRepository:
                 detail = str(e)
             )
 
-
     async def get_user_by_id(self, id:int) -> User | None:
         try: 
             stmt = select(User).where(User.id == id)
@@ -54,7 +52,6 @@ class UserRepository:
                 operation="get_user_by_id",
                 detail = str(e)
             )
-
 
     async def update_last_login(self, id:int) -> None:
         try:

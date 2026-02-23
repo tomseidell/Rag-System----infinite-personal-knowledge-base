@@ -16,6 +16,15 @@ class DocumentResponse(BaseModel):
     created_at: datetime  
 
 
+class DocumentContentResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    content: bytes
+    original_filename: str
+    file_size: int
+    file_type: str
+
+
 class DocumentCreate(BaseModel):
     user_id: int
     title: str
@@ -25,6 +34,7 @@ class DocumentCreate(BaseModel):
     file_size: int
     file_type: str
 
-class GetDocuments(BaseModel):
+class PaginatedDocuments(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
     documents: list[DocumentResponse]
     next_cursor: int| None

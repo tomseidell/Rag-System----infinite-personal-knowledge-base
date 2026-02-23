@@ -28,3 +28,5 @@ class InvalidTokenException(Exception):
 class WrongTokenTypeException(Exception):
     def __init__(self):
         self.message = "Wrong token type"
+
+

@@ -8,8 +8,7 @@ class ChunkServiceSync:
         self.repo = repo
 
     def create_chunks_from_text(
-        self, chunks: list[str], document_id: int, user_id: int
-    ) -> list[Chunk]:
+        self, chunks: list[str], document_id: int, user_id: int) -> list[Chunk]:
         chunk_objects = [
             Chunk(
                 text=chunk,

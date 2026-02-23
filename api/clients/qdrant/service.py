@@ -1,26 +1,20 @@
-from qdrant_client.models import PointIdsList, ExtendedPointId
+from qdrant_client.models import PointIdsList, ExtendedPointId, ScoredPoint
 from qdrant_client import AsyncQdrantClient
 import os 
-from dataclasses import dataclass
 from api.clients.qdrant.exceptions import QdrantException
 import logging 
 from qdrant_client import models
 from fastembed import SparseTextEmbedding # embedding modell built by qdrant
-import gc
-import time
 
-
-@dataclass
-class QdrantInsertResult:
-    chunk_count:int
-    chunk_ids:list[ExtendedPointId]
 
 logger = logging.getLogger(__name__)
 
 
 class AsyncQdrantService:
     def __init__(self):
-        self.client = AsyncQdrantClient(url=os.getenv("QDRANT_URL", "http://localhost:6333"))    
+        # init connection to Qdrant
+        self.client = AsyncQdrantClient(url=os.getenv("QDRANT_URL", "http://localhost:6333"))  
+        # initialize embedding modell 
         self.sparse_model = SparseTextEmbedding(model_name="prithivida/Splade_PP_en_v1")
 
 
@@ -30,12 +24,11 @@ class AsyncQdrantService:
             except:
                 await self.client.create_collection("second_brain")
 
-
     async def delete_many_chunks(self,chunk_ids:list[ExtendedPointId]):
         try:
             await self.client.delete(
-                collection_name="second_brain",
-                points_selector=PointIdsList(points=chunk_ids),
+                collection_name="second_brain", # hardcoded collection, because only 1 exists
+                points_selector=PointIdsList(points=chunk_ids), 
             )
         except Exception as e:
             logger.error(f"Failed to delete chunks from Qdrant: {e}")
@@ -44,11 +37,13 @@ class AsyncQdrantService:
                 detail=str(e)
             )
     
-    async def get_matching_chunks(self, query_text:str, dense_vector, user_id:int):
+    async def get_matching_chunks(self, query_text:str, dense_vector, user_id:int) ->list[ScoredPoint]:
         try:
+            # create sparce vectors for user query
             sparse_embedding = list(self.sparse_model.embed([query_text]))
             sparse_vector = sparse_embedding[0]
 
+            # search for nearest 3 Vectors in DB
             result = await self.client.query_points(
                 collection_name="second_brain",
                 prefetch=[

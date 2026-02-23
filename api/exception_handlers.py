@@ -5,6 +5,7 @@ from api.modules.document.exceptions import DocumentAlreadyExistsException
 from shared.core.exceptions import DatabaseException, InputError, NotFoundException
 from api.clients.storage.exceptions import StorageException
 from api.clients.qdrant.exceptions import QdrantException
+from api.clients.redis.exceptions import RedisException
 
 import logging
 
@@ -61,6 +62,19 @@ def register_exception_handlers(app):
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             content={"detail": f"{exc.operation} failed"} 
         )  
+    
+
+    @app.exception_handler(RedisException)
+    async def redis_exception_handler(request:Request, exc:RedisException):
+        logger.error(
+            f"Redis error occurrd in {exc.operation}",
+            extra={"path": request.url},
+            exc_info=True)
+        return JSONResponse(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            content={"detail": f"{exc.operation} failed"}
+        )
+
 
     @app.exception_handler(NotFoundException)
     async def not_found_exception_handler(request: Request, exc:NotFoundException):
