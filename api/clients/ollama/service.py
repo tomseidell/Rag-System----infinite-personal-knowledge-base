@@ -23,7 +23,7 @@ class OllamaServiceAsync():
                 detail=str(e)
             ) 
 
-    async def create_message(self, texts:list[str], user_input)->AsyncGenerator[str , None]:
+    async def create_message(self, texts:list[str], user_input:str)->AsyncGenerator[str , None]:
         try:
             input_string = "\n\n".join(texts)
             response= await self.client.chat(model="llama3", stream=True, messages=[
@@ -32,6 +32,7 @@ class OllamaServiceAsync():
                     "content": f"Create a response and primarily focus on information from this string: {input_string}. If the string is empty or simply no relevant information to the message are given, answer the question with all your basic knowledge and do not rely on the information string. The user message or input is: {user_input}"
                 }
             ])
+            # return with async generator for improved performance and to allow streaming to frontend
             async for chunk in response:
                 if chunk.message.content:
                     yield chunk.message.content
