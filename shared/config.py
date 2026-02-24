@@ -2,7 +2,7 @@ from pathlib import Path
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-DOTENV = Path(__file__).parent.parent / ".env"
+DOTENV = Path(__file__).parent.parent / ".env" # assign path manually
 
 class Settings(BaseSettings):
     ENVIRONMENT: str
@@ -32,8 +32,8 @@ class Settings(BaseSettings):
     def DATABASE_ASYNC_URL(self):
         return f"postgresql+asyncpg://{self.DATABASE_USER}:{self.DATABASE_PASSWORD}@{self.DB_HOST}:{self.DATABASE_PORT}/{self.DB_NAME}"
 
-    model_config = SettingsConfigDict(env_file=DOTENV, extra="ignore")  
+    model_config = SettingsConfigDict(env_file=DOTENV, extra="ignore")  # ignore all extra envs
 
 
 
-settings = Settings()
+settings = Settings() # create instance to import
