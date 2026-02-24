@@ -5,6 +5,7 @@ from shared.core.exceptions import NotFoundException
 
 from gcloud.aio.storage import Storage
 
+import aiohttp
 from aiohttp import ClientResponseError
 
 
@@ -15,11 +16,19 @@ logger = logging.getLogger(__name__)
 class AsyncStorageService:
     def __init__(self):
         try:
-            self.storage_client = Storage()
+            self._storage_client = None
             self.bucket_name = (settings.GCS_BUCKET_NAME)
         except Exception as e:
             logger.critical(f"Failed to initialize storage {e}", exc_info=True)
 
+
+    @property # gets called when calling self.storage_client
+    def storage_client(self):
+        if self._storage_client is None: # if not already existing, create new 
+            session = aiohttp.ClientSession()
+            self._storage_client = Storage(session=session)
+        return self._storage_client
+    
     
     async def upload_file(self, content: bytes, filename: str, user_id: int, content_type:str) -> str:
         try:
