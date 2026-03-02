@@ -6,6 +6,8 @@ from api.modules.chat.router import router as chat_router
 
 router = APIRouter()
 
+# test ci pipeline
+
 
 router.include_router(user_router, prefix="/user", tags= ["users"])
 router.include_router(document_router, prefix="/document", tags=["document"])
