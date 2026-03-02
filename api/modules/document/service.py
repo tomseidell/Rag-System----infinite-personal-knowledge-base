@@ -1,13 +1,11 @@
 import uuid
 from fastapi import UploadFile
-from shared.modules.document.model import Document
 from api.modules.document.repository import DocumentRepository
 import hashlib
 from api.modules.document.schemas import DocumentCreate, PaginatedDocuments, DocumentUploadResponse, DocumentContentResponse, DocumentResponse
 from pathlib import Path
 import asyncio
 from sqlalchemy.ext.asyncio import AsyncSession
-import asyncio
 from celery.result import AsyncResult
 
 

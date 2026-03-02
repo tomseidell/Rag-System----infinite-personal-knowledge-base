@@ -1,7 +1,7 @@
 import pytest
 from unittest.mock import AsyncMock
 from api.modules.document.service import DocumentService
-from shared.core.exceptions import InputError, NotFoundException
+from shared.core.exceptions import InputError
 
 # create mocked service
 service = DocumentService(

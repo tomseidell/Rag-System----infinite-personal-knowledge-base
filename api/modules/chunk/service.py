@@ -1,4 +1,3 @@
-from shared.modules.chunk.model import Chunk
 from api.modules.chunk.repository import ChunkRepository
 from qdrant_client.models import ExtendedPointId
 

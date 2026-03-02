@@ -1,5 +1,4 @@
-from fastapi import APIRouter, Depends, Response 
-from api.modules.chat.schemas import ChatMessageResponse
+from fastapi import APIRouter, Depends 
 from api.modules.chat.dependencies import get_chat_service
 from api.modules.chat.service import ChatService
 from api.modules.user.dependencies import get_current_user_id

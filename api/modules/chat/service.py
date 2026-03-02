@@ -2,7 +2,7 @@ from api.clients.ollama.service import OllamaServiceAsync
 from api.clients.qdrant.service import AsyncQdrantService   
 from api.modules.document.service import DocumentService
 from api.clients.redis.service import RedisService
-from api.modules.chat.schemas import ChatMessageResponse, Ressource
+from api.modules.chat.schemas import Ressource
 import hashlib
 import json
 
