@@ -5,7 +5,7 @@ from fastapi.responses import JSONResponse
 async def rate_limit_middleware(request: Request, call_next): # call next gets automatically handled by fast api
     redis_service = get_redis_service() # get singleton redis instance 
 
-    if request.url.path in ["/health", "/metrics"]: # allow prometheus and health checks 
+    if request.url.path in ["/health", "/metrics"]: # allow prometheus and health checks without rate limit
         return await call_next(request) # go to next middleware
     
     if not request.client: # decline request without client information (needed for ip checking)

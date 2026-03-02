@@ -1,15 +1,14 @@
 from fastapi import APIRouter, Depends, UploadFile, Response
 
 from api.modules.document.dependencies import get_document_service
-from api.modules.document.schemas import DocumentResponse, PaginatedDocuments
+from api.modules.document.schemas import PaginatedDocuments, DocumentUploadResponse
 from api.modules.document.service import DocumentService
 from api.modules.user.dependencies import get_current_user_id
-from shared.modules.user.model import User
 
 
 router = APIRouter()
 
-@router.post("/", status_code=201, response_model=DocumentResponse)
+@router.post("/", status_code=201, response_model=DocumentUploadResponse)
 async def upload(
     file:UploadFile,
     title:str | None,

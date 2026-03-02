@@ -1,5 +1,4 @@
-from sqlalchemy import Boolean, Column, Integer, String, DateTime, ARRAY, Text
-from sqlalchemy.sql import func
+from sqlalchemy import Boolean, Integer, String, DateTime
 from sqlalchemy.orm import Mapped, mapped_column
 from datetime import datetime
 
