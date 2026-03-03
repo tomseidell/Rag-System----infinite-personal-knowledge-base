@@ -5,7 +5,6 @@ from api.modules.user.repository import UserRepository
 from api.modules.document.service import DocumentService
 from shared.database import get_db
 
-from fastapi import Depends
 
 from api.clients.storage.service import AsyncStorageService
 from api.clients.storage.dependencies import get_storage_service

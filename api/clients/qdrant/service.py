@@ -21,7 +21,7 @@ class AsyncQdrantService:
     async def ensure_collection(self):
             try:
                 await self.client.get_collection("second_brain")
-            except:
+            except Exception:
                 await self.client.create_collection("second_brain")
 
     async def delete_many_chunks(self,chunk_ids:list[ExtendedPointId]):

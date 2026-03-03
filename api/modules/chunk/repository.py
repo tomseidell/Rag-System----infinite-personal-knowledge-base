@@ -2,7 +2,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from shared.modules.chunk.model import Chunk
 from sqlalchemy.exc import SQLAlchemyError
 from shared.core.exceptions import DatabaseException
-from api.modules.chunk.schemas import ChunkCreate
 from sqlalchemy import select, delete
 
 
