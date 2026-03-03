@@ -44,5 +44,5 @@ def get_sync_db():
     db = SyncSessionLocal()
     try:
         yield db
-    except:
+    except Exception:
         db.close

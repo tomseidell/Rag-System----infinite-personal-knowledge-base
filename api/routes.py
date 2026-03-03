@@ -1,5 +1,4 @@
 from fastapi import APIRouter
-router = APIRouter()
 from api.modules.document.router import router as document_router
 from api.modules.user.router import router as user_router
 from api.modules.chat.router import router as chat_router

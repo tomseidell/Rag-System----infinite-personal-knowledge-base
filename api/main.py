@@ -9,9 +9,9 @@ from api.middlewares.rate_limit import rate_limit_middleware
 
 ROOT_DIR = Path(__file__).parent.parent
 sys.path.insert(0, str(ROOT_DIR))
-from api.exception_handlers import register_exception_handlers
-from api.clients.qdrant.dependencies import get_qdrant_service
-from api.routes import router as routes
+from api.exception_handlers import register_exception_handlers  # noqa: E402
+from api.clients.qdrant.dependencies import get_qdrant_service  # noqa: E402
+from api.routes import router as routes  # noqa: E402
 
 
 @asynccontextmanager
