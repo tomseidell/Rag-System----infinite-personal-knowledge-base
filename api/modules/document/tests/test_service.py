@@ -1,5 +1,5 @@
 import pytest
-from unittest.mock import patch, AsyncMock, MagicMock
+from unittest.mock import patch, AsyncMock
 from api.modules.document.service import DocumentService
 from shared.core.exceptions import InputError
 from shared.modules.document.model import Document
