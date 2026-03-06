@@ -10,7 +10,7 @@ class InputError(Exception):
     def __init__(self, operation, detail):
         self.operation = operation
         self.detail = detail
-        self.message = f"Input validation error occured in: {self.operation}"
+        self.message = f"Input validation error occured in: {self.operation} : {self.detail}"
         super().__init__(self.message)
 
 
