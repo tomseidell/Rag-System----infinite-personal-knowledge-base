@@ -33,12 +33,26 @@ def test_get_file_extension():
 
 
 @pytest.mark.asyncio # create async test
-async def test_upload_document():
+async def test_upload_document_too_large_file():
     mocked_file = AsyncMock()
     # when .read() is called return this
     mocked_file.read.return_value = b"x" * (10 * 1024 * 1024)  # mock 10mb size
 
-    with pytest.raises(InputError): # expect InputError Exception to be thrown
+    with pytest.raises(InputError, match="too large"): # expect InputError Exception to be thrown
         await service.upload_document(user_id=1, file= mocked_file, title="test")
 
+@pytest.mark.asyncio 
+async def test_upload_document_without_filename():
+    mocked_file = AsyncMock()
+    mocked_file.filename = None
 
+    with pytest.raises(InputError, match="is missing"): # expect InputError Exception to be thrown
+        await service.upload_document(user_id=1, file= mocked_file, title="test")
+
+@pytest.mark.asyncio 
+async def test_upload_document_with_wrong_file_type():
+    mocked_file = AsyncMock()
+    mocked_file.filename = "image.png"
+
+    with pytest.raises(InputError, match="is not pdf"): # expect InputError Exception to be thrown
+        await service.upload_document(user_id=1, file= mocked_file, title="test")
