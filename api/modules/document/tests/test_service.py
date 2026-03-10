@@ -114,8 +114,8 @@ async def test_upload_document():
         return_value = mocked_existing_document
     )
 
-    with patch("api.modules.document.service.celery_app.send_task") as mocked_task:
-        mocked_task.return_value.task_id = "mocked-task-id" ## mocked task_id, response from mocked celery worker
+    with patch("api.modules.document.service.celery_app.send_task") as mocked_task: # patch replaces the method celery_app.send_task with mocked_taks
+        mocked_task.return_value.task_id = "mocked-task-id" # mock task id for celery_app.send_task()
     
         result = await service.upload_document(user_id=2, file=mocked_file, title="test")
 
