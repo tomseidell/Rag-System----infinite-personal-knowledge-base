@@ -1,12 +1,16 @@
 import pytest
 from unittest.mock import patch, AsyncMock, ANY
 from api.modules.document.service import DocumentService
-from shared.core.exceptions import InputError, NotFoundException
+from shared.core.exceptions import InputError, NotFoundException, DatabaseException
 from shared.modules.document.model import Document
 from datetime import datetime
 from api.modules.document.schemas import DocumentContentResponse, DocumentUploadResponse
 from api.clients.qdrant.exceptions import QdrantException
 from api.clients.storage.exceptions import StorageException
+from sqlalchemy.exc import SQLAlchemyError
+from api.modules.document.exceptions import DocumentNotFoundException
+
+
 
 # create mocked service
 @pytest.fixture(scope="function") # fixture creates new instance after every functin call, therefore allows us to have a fresh isntance, without configurations of previous tests (e.g. mocked methods...)
@@ -206,11 +210,10 @@ async def test_delete_non_existing_document(service):
     Method should raise error, because given document id was not found in db
     """
 
-    service.document_repository.get_document = AsyncMock(return_value = None)
+    service.document_repository.delete_document = AsyncMock(side_effect=DocumentNotFoundException(identifier="14"))
 
-    with pytest.raises(NotFoundException, match="document"):
+    with pytest.raises(DocumentNotFoundException, match="14"):
         await service.delete_document(user_id=1, document_id= 14)
-
 
 @pytest.mark.asyncio
 async def test_delete_document_qdrant_fails(service, mocked_existing_document):
@@ -219,7 +222,7 @@ async def test_delete_document_qdrant_fails(service, mocked_existing_document):
     """
 
     mocked_extended_point_list = [1,2,3,4,5,6]
-    service.document_repository.get_document = AsyncMock(return_value = mocked_existing_document)
+    service.document_repository.delete_document = AsyncMock(return_value = mocked_existing_document)
     service.chunk_service.get_chunks_for_doc = AsyncMock(return_value = mocked_extended_point_list)
     service.chunk_service.delete_chunks_for_doc = AsyncMock(return_value = None)
     
@@ -234,7 +237,6 @@ async def test_delete_document_qdrant_fails(service, mocked_existing_document):
     service.db.commit.assert_not_called()
     service.db.rollback.assert_not_called()
 
-
 @pytest.mark.asyncio
 async def test_delete_document_storage_fails(service, mocked_existing_document):
     """
@@ -242,8 +244,8 @@ async def test_delete_document_storage_fails(service, mocked_existing_document):
     """
 
     mocked_extended_point_list = [1,2,3,4,5,6]
-    service.document_repository.get_document = AsyncMock(return_value = mocked_existing_document)
     service.chunk_service.get_chunks_for_doc = AsyncMock(return_value = mocked_extended_point_list)
+    service.document_repository.delete_document = AsyncMock(return_value = mocked_existing_document)
     service.chunk_service.delete_chunks_for_doc = AsyncMock(return_value = None)
     service.qdrant.delete_many_chunks = AsyncMock(return_value = None)
 
@@ -257,5 +259,40 @@ async def test_delete_document_storage_fails(service, mocked_existing_document):
     service.db.commit.assert_not_called()
     service.db.rollback.assert_not_called()
 
+@pytest.mark.asyncio
+async def test_delete_document_db_commit_fails(service, mocked_existing_document):
+    """
+    Method should rollback db due to unknown database / core exception
+    """
 
-## jetzt hier noch test und simulieren, dass fehler in db.commit() kommt + test alles läuft gut
+    mocked_chunk_ids = [1,2,3,4,5,6]
+    service.chunk_service.get_chunks_for_doc = AsyncMock(return_value = mocked_chunk_ids)
+    service.document_repository.delete_document = AsyncMock(return_value = mocked_existing_document)
+    service.chunk_service.delete_chunks_for_doc = AsyncMock(return_value = None)
+    service.qdrant.delete_many_chunks = AsyncMock(return_value = None)
+    service.db.commit = AsyncMock(side_effect=SQLAlchemyError("commit failed"))
+
+    with pytest.raises(DatabaseException, match= "delete_document"):
+        await service.delete_document(user_id=12, document_id=14)
+    
+    service.db.rollback.assert_called_once()
+
+@pytest.mark.asyncio
+async def test_delete_document(service, mocked_existing_document):
+    """
+    Method should delete documet from GCP Storage, Qdrant Vector Database and Postgres DB
+    """
+
+    mocked_chunk_ids = [1,2,3,4,5,6]
+    service.document_repository.delete_document = AsyncMock(return_value = mocked_existing_document)
+    service.chunk_service.get_chunks_for_doc = AsyncMock(return_value = mocked_chunk_ids)
+    service.chunk_service.delete_chunks_for_doc = AsyncMock(return_value = None)
+    service.qdrant.delete_many_chunks = AsyncMock()
+    service.storage.delete_file = AsyncMock()
+    service.db.commit = AsyncMock()
+
+    result = await service.delete_document(user_id=1, document_id=12)
+
+    assert result == None
+
+    service.db.rollback.assert_not_called()
