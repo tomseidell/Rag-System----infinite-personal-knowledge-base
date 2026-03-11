@@ -8,9 +8,11 @@ import asyncio
 from sqlalchemy.ext.asyncio import AsyncSession
 from celery.result import AsyncResult
 
+from api.clients.storage.exceptions import StorageException
 
 
-from shared.core.exceptions import InputError, NotFoundException
+from shared.core.exceptions import InputError, NotFoundException, DatabaseException
+from api.modules.document.exceptions import DocumentNotFoundException
 
 from api.clients.storage.service import AsyncStorageService
 from api.modules.user.repository import UserRepository
@@ -18,6 +20,7 @@ from api.modules.user.repository import UserRepository
 #from worker.tasks.process_document import process_document
 
 from api.clients.qdrant.service import AsyncQdrantService
+from api.clients.qdrant.exceptions import QdrantException
 
 from api.modules.chunk.service import ChunkServiceAsync
 
@@ -61,8 +64,8 @@ class DocumentService:
         return f"{unique_id}_{name}{ext}" 
 
     def _encode_content_base64(self, content:bytes) ->str:
-        encoded_bytes = base64.b64encode(content)
-        return encoded_bytes.decode("utf-8")
+        encoded_bytes = base64.b64encode(content) # create ASCII bytes
+        return encoded_bytes.decode("utf-8") # create string
 
 
     async def upload_document(self, user_id: int, title: str| None, file:UploadFile) -> DocumentUploadResponse:
@@ -127,7 +130,7 @@ class DocumentService:
 
         task_id = result.task_id
 
-        print("task Id 🆔: ",task_id)
+        print("task Id: ",task_id)
 
         response = DocumentUploadResponse.model_validate(db_document)
         response.task_id = task_id
@@ -145,32 +148,31 @@ class DocumentService:
 
     async def delete_document(self, user_id:int, document_id:int) ->None:
         try:
-            document = await self.document_repository.get_document(user_id=user_id, document_id=document_id)
-            if document is None:
-                raise NotFoundException("document")
-            chunks_ids = await self.chunk_service.get_chunks_for_doc(document_id=document_id, user_id=user_id)
-            await self.document_repository.delete_document(user_id=user_id, document_id=document_id)
+            # if no document is found, DocumentNotFoundException is being raised
+            document = await self.document_repository.delete_document(user_id=user_id, document_id=document_id)
+
+            chunks_ids = await self.chunk_service.get_chunks_for_doc(document_id=document_id, user_id=user_id) 
 
             tasks = []
-
-            if chunks_ids:
+            
+            if chunks_ids: # min len 1 
                 await self.chunk_service.delete_chunks_for_doc(user_id=user_id, document_id=document_id)
                 tasks.append(self.qdrant.delete_many_chunks(chunk_ids=chunks_ids))
             
             if document.storage_path:
                 tasks.append(self.storage.delete_file(document.storage_path))
                 
-            await asyncio.gather(*tasks)
+            await asyncio.gather(*tasks, return_exceptions=False) # execute async operations in tasks array parallel
 
-            await self.db.commit()
+            await self.db.commit() # commit db deletion only after everything went right 
 
-        except NotFoundException:
+        except (StorageException, QdrantException, DocumentNotFoundException): # raise expected errors from storage and qdrant 
             raise
 
 
-        except Exception:
+        except (Exception) as e: # for any unexpected errors or database errors
             await self.db.rollback()
-            raise
+            raise DatabaseException(detail=str(e), operation="delete_document")
 
 
     async def get_documents(self, user_id:int, cursor:int | None)-> PaginatedDocuments:

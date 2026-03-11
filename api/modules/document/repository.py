@@ -47,7 +47,7 @@ class DocumentRepository:
                 detail=str(e)
             ) 
         
-    async def delete_document(self, user_id:int, document_id:int) -> Document | None:
+    async def delete_document(self, user_id:int, document_id:int) -> Document:
         try:
             document = await self.get_document(user_id=user_id, document_id=document_id)
 
@@ -58,8 +58,6 @@ class DocumentRepository:
                 await self.db.execute(stmt)
             return document
         
-
-
         except SQLAlchemyError as e:
             raise DatabaseException(
                 operation="delete_document",
@@ -75,14 +73,14 @@ class DocumentRepository:
             )
             
             if cursor:
-                stmt = stmt.where(Document.id < cursor) # smaller => more in the past 
+                stmt = stmt.where(Document.id < cursor) # smaller => more in the past, because desc order 
             
-            stmt = stmt.limit(limit + 1)  # fetch one extra for infinite fetch 
+            stmt = stmt.limit(limit + 1)  # fetch one extra 
             
             result = await self.db.execute(stmt)
             documents = list(result.scalars().all()) # convert to list to ensure type safety 
             
-            has_more = len(documents) > limit
+            has_more = len(documents) > limit # if extra item from above came through, we know that there are more to fetch
             if has_more:
                 documents = documents[:limit]  # Remove extra
                 next_cursor = documents[-1].id  # Last doc ID
