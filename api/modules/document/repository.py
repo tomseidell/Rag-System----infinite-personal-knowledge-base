@@ -47,7 +47,7 @@ class DocumentRepository:
                 detail=str(e)
             ) 
         
-    async def delete_document(self, user_id:int, document_id:int) -> Document | None:
+    async def delete_document(self, user_id:int, document_id:int) -> Document:
         try:
             document = await self.get_document(user_id=user_id, document_id=document_id)
 
