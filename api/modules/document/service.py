@@ -63,8 +63,8 @@ class DocumentService:
         return f"{unique_id}_{name}{ext}" 
 
     def _encode_content_base64(self, content:bytes) ->str:
-        encoded_bytes = base64.b64encode(content)
-        return encoded_bytes.decode("utf-8")
+        encoded_bytes = base64.b64encode(content) # create ASCII bytes
+        return encoded_bytes.decode("utf-8") # create string
 
 
     async def upload_document(self, user_id: int, title: str| None, file:UploadFile) -> DocumentUploadResponse:
@@ -129,7 +129,7 @@ class DocumentService:
 
         task_id = result.task_id
 
-        print("task Id 🆔: ",task_id)
+        print("task Id: ",task_id)
 
         response = DocumentUploadResponse.model_validate(db_document)
         response.task_id = task_id
