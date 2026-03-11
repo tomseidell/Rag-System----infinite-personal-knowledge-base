@@ -8,6 +8,7 @@ import asyncio
 from sqlalchemy.ext.asyncio import AsyncSession
 from celery.result import AsyncResult
 
+from api.clients.storage.exceptions import StorageException
 
 
 from shared.core.exceptions import InputError, NotFoundException
@@ -18,6 +19,7 @@ from api.modules.user.repository import UserRepository
 #from worker.tasks.process_document import process_document
 
 from api.clients.qdrant.service import AsyncQdrantService
+from api.clients.qdrant.exceptions import QdrantException
 
 from api.modules.chunk.service import ChunkServiceAsync
 
@@ -148,27 +150,27 @@ class DocumentService:
             document = await self.document_repository.get_document(user_id=user_id, document_id=document_id)
             if document is None:
                 raise NotFoundException("document")
-            chunks_ids = await self.chunk_service.get_chunks_for_doc(document_id=document_id, user_id=user_id)
+            chunks_ids = await self.chunk_service.get_chunks_for_doc(document_id=document_id, user_id=user_id) 
             await self.document_repository.delete_document(user_id=user_id, document_id=document_id)
 
             tasks = []
 
-            if chunks_ids:
+            if chunks_ids: # min len 1 
                 await self.chunk_service.delete_chunks_for_doc(user_id=user_id, document_id=document_id)
                 tasks.append(self.qdrant.delete_many_chunks(chunk_ids=chunks_ids))
             
             if document.storage_path:
                 tasks.append(self.storage.delete_file(document.storage_path))
                 
-            await asyncio.gather(*tasks)
+            await asyncio.gather(*tasks, return_exceptions=False) # execute async operations in tasks array parallel
 
-            await self.db.commit()
+            await self.db.commit() # commit db deletion only after everything went right 
 
-        except NotFoundException:
+        except (NotFoundException, StorageException, QdrantException): # raise expected errors from storage and qdrant 
             raise
 
 
-        except Exception:
+        except Exception: # for any unexpected error
             await self.db.rollback()
             raise
 
