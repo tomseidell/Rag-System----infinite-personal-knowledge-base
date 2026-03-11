@@ -293,6 +293,6 @@ async def test_delete_document(service, mocked_existing_document):
 
     result = await service.delete_document(user_id=1, document_id=12)
 
-    assert result == None
+    assert result is None
 
     service.db.rollback.assert_not_called()
