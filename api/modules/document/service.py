@@ -11,7 +11,8 @@ from celery.result import AsyncResult
 from api.clients.storage.exceptions import StorageException
 
 
-from shared.core.exceptions import InputError, NotFoundException
+from shared.core.exceptions import InputError, NotFoundException, DatabaseException
+from api.modules.document.exceptions import DocumentNotFoundException
 
 from api.clients.storage.service import AsyncStorageService
 from api.modules.user.repository import UserRepository
@@ -147,14 +148,13 @@ class DocumentService:
 
     async def delete_document(self, user_id:int, document_id:int) ->None:
         try:
-            document = await self.document_repository.get_document(user_id=user_id, document_id=document_id)
-            if document is None:
-                raise NotFoundException("document")
+            # if no document is found, DocumentNotFoundException is being raised
+            document = await self.document_repository.delete_document(user_id=user_id, document_id=document_id)
+
             chunks_ids = await self.chunk_service.get_chunks_for_doc(document_id=document_id, user_id=user_id) 
-            await self.document_repository.delete_document(user_id=user_id, document_id=document_id)
 
             tasks = []
-
+            
             if chunks_ids: # min len 1 
                 await self.chunk_service.delete_chunks_for_doc(user_id=user_id, document_id=document_id)
                 tasks.append(self.qdrant.delete_many_chunks(chunk_ids=chunks_ids))
@@ -166,13 +166,13 @@ class DocumentService:
 
             await self.db.commit() # commit db deletion only after everything went right 
 
-        except (NotFoundException, StorageException, QdrantException): # raise expected errors from storage and qdrant 
+        except (StorageException, QdrantException, DocumentNotFoundException): # raise expected errors from storage and qdrant 
             raise
 
 
-        except Exception: # for any unexpected error
+        except (Exception) as e: # for any unexpected errors or database errors
             await self.db.rollback()
-            raise
+            raise DatabaseException(detail=str(e), operation="delete_document")
 
 
     async def get_documents(self, user_id:int, cursor:int | None)-> PaginatedDocuments:
