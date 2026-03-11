@@ -1,22 +1,27 @@
 import pytest
 from unittest.mock import patch, AsyncMock
 from api.modules.document.service import DocumentService
-from shared.core.exceptions import InputError
+from shared.core.exceptions import InputError, NotFoundException
 from shared.modules.document.model import Document
 from datetime import datetime
+from api.modules.document.schemas import DocumentContentResponse, DocumentUploadResponse
+from api.clients.qdrant.exceptions import QdrantException
 
 # create mocked service
-service = DocumentService(
-    document_repository=AsyncMock(),
-    storage=AsyncMock(),
-    user_repository=AsyncMock(),
-    qdrant_service=AsyncMock(),
-    chunk_service=AsyncMock(),
-    db=AsyncMock(),
-)
+@pytest.fixture
+def service():
+    return DocumentService(
+        document_repository=AsyncMock(),
+        storage=AsyncMock(),
+        user_repository=AsyncMock(),
+        qdrant_service=AsyncMock(),
+        chunk_service=AsyncMock(),
+        db=AsyncMock(),
+        )
 
-
-mocked_existing_document = Document(
+@pytest.fixture
+def mocked_existing_document():
+    return Document(
     id=12,
     user_id=1,
     title="test",
@@ -35,20 +40,19 @@ mocked_existing_document = Document(
 )
 
 
-
-def test_calculate_hash():
+def test_calculate_hash(service):
     example_string = "Hello, this is a Test"
     bytes_string = example_string.encode("utf-8")
     result = service._calculate_hash(bytes_string)
 
     assert result == "f8a08e274f99740446298638ef2db4e463e15d7b1a5b164a7a4822d72da1819f"
 
-def test_create_title_from_file():
+def test_create_title_from_file(service):
     example_file_name = "This is a filename"
     result = service._create_title_from_file(example_file_name)
     assert result == "Thisisafilename"
 
-def test_get_file_extension():
+def test_get_file_extension(service):
     example_file_name = "file.pdf"
     result = service._get_file_extension(example_file_name)
     assert result == "pdf"
@@ -56,7 +60,7 @@ def test_get_file_extension():
 
 # test upload document
 @pytest.mark.asyncio # create async test
-async def test_upload_document_too_large_file():
+async def test_upload_document_too_large_file(service):
     mocked_file = AsyncMock()
     # when .read() is called return this
     mocked_file.read.return_value = b"x" * (10 * 1024 * 1024)  # mock 10mb size
@@ -65,7 +69,7 @@ async def test_upload_document_too_large_file():
         await service.upload_document(user_id=1, file= mocked_file, title="test")
 
 @pytest.mark.asyncio 
-async def test_upload_document_without_filename():
+async def test_upload_document_without_filename(service):
     mocked_file = AsyncMock()
     mocked_file.filename = None
 
@@ -73,7 +77,7 @@ async def test_upload_document_without_filename():
         await service.upload_document(user_id=1, file= mocked_file, title="test")
 
 @pytest.mark.asyncio 
-async def test_upload_document_with_wrong_file_type():
+async def test_upload_document_with_wrong_file_type(service):
     mocked_file = AsyncMock()
     mocked_file.filename = "image.png"
 
@@ -81,7 +85,7 @@ async def test_upload_document_with_wrong_file_type():
         await service.upload_document(user_id=1, file= mocked_file, title="test")
 
 @pytest.mark.asyncio 
-async def test_upload_document_with_existing_hash():
+async def test_upload_document_with_existing_hash(service, mocked_existing_document):
     mocked_file = AsyncMock()
     mocked_file.filename = "file.pdf"
     mocked_file.read = AsyncMock(return_value=b"example pdf content") # mock async .read()
@@ -92,6 +96,8 @@ async def test_upload_document_with_existing_hash():
     )  
 
     result = await service.upload_document(user_id=2, file=mocked_file, title="test")
+
+    assert isinstance(result, DocumentUploadResponse)
     assert result.id == mocked_existing_document.id
 
     # also check if hash function works correctly 
@@ -100,7 +106,7 @@ async def test_upload_document_with_existing_hash():
     )
    
 @pytest.mark.asyncio
-async def test_upload_document():
+async def test_upload_document(service, mocked_existing_document):
     mocked_file = AsyncMock()
     mocked_file.filename = "file.pdf"
     mocked_file.read = AsyncMock(return_value=b"example pdf content") # mock async .read()
@@ -119,5 +125,70 @@ async def test_upload_document():
     
         result = await service.upload_document(user_id=2, file=mocked_file, title="test")
 
+        assert isinstance(result, DocumentUploadResponse)
         assert result.id == mocked_existing_document.id
         assert result.task_id == "mocked-task-id"
+
+
+# test get document
+@pytest.mark.asyncio
+async def test_get_non_existing_document(service):
+    service.document_repository.get_document = AsyncMock(return_value=None)
+
+    with pytest.raises(NotFoundException, match="document"):
+        await service.get_document(user_id = 1, document_id = 14)
+
+@pytest.mark.asyncio
+async def test_get_document(service, mocked_existing_document):
+    service.document_repository.get_document = AsyncMock(return_value=mocked_existing_document)
+    service.storage.get_file = AsyncMock(return_value=b"mocked bytes")
+
+    result = await service.get_document(user_id=1, document_id=12)
+
+    assert isinstance(result, DocumentContentResponse)
+    assert result.content == b"mocked bytes"
+    assert result.original_filename == "original-filename.pdf"
+
+
+# test delete document 
+@pytest.mark.asyncio
+async def test_delete_non_existing_document(service):
+    service.document_repository.get_document = AsyncMock(return_value = None)
+
+    with pytest.raises(NotFoundException, match="document"):
+        await service.delete_document(user_id=1, document_id= 14)
+
+
+@pytest.mark.asyncio
+async def test_delete_document_qdrant_fails(service, mocked_existing_document):
+    mocked_extended_point_list = [1,2,3,4,5,6]
+    service.document_repository.get_document = AsyncMock(return_value = mocked_existing_document)
+    service.chunk_service.get_chunks_for_doc = AsyncMock(return_value = mocked_extended_point_list)
+    service.chunk_service.delete_chunks_for_doc = AsyncMock(return_value = None)
+    service.qdrant.delete_many_chunks = AsyncMock(side_effect=QdrantException(operation="async:delete_many_chunks",detail="error in qdrant"))
+    service.storage.delete_file = AsyncMock(return_value=None)
+
+    with pytest.raises(QdrantException, match="delete_many_chunks"):
+        await service.delete_document(user_id=1, document_id=19)
+   
+   # expect function to directly forward error without executing any other function
+    service.db.commit.assert_not_called()
+    service.db.rollback.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_delete_document_storage_fails(service, mocked_existing_document):
+    mocked_extended_point_list = [1,2,3,4,5,6]
+    service.document_repository.get_document = AsyncMock(return_value = mocked_existing_document)
+    service.chunk_service.get_chunks_for_doc = AsyncMock(return_value = mocked_extended_point_list)
+    service.chunk_service.delete_chunks_for_doc = AsyncMock(return_value = None)
+    service.qdrant.delete_many_chunks = AsyncMock(return_value = None)
+    service.storage.delete_file = AsyncMock(side_effect=NotFoundException("File: test"))
+
+    with pytest.raises(NotFoundException, match="File: test"):
+        await service.delete_document(user_id=1, document_id=19)
+    service.db.commit.assert_not_called()
+    service.db.rollback.assert_not_called()
+
+
+## jetzt hier noch test und simulieren, dass fehler in db.commit() kommt + test alles läuft gut
