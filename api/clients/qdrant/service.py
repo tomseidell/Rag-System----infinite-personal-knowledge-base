@@ -24,7 +24,7 @@ class AsyncQdrantService:
             except Exception:
                 await self.client.create_collection("second_brain")
 
-    async def delete_many_chunks(self,chunk_ids:list[ExtendedPointId]):
+    async def delete_many_chunks(self,chunk_ids:list[ExtendedPointId]) -> None:
         try:
             await self.client.delete(
                 collection_name="second_brain", # hardcoded collection, because only 1 exists
