@@ -334,7 +334,7 @@ async def test_get_documents_not_returning_cursor(service, mocked_existing_docum
 
     assert len(result.documents) == 2
     assert result.documents[0].id == 12
-    assert result.next_cursor == None
+    assert result.next_cursor is None
 
 @pytest.mark.asyncio
 async def test_get_documents(service, mocked_existing_document):
