@@ -45,6 +45,7 @@ def mocked_existing_document():
 )
 
 
+# test private helper methods
 def test_calculate_hash(service):
     """
     Method should create sha256 hash from bytes
@@ -296,3 +297,76 @@ async def test_delete_document(service, mocked_existing_document):
     assert result is None
 
     service.db.rollback.assert_not_called()
+
+
+# test get documents
+@pytest.mark.asyncio
+async def test_get_documents_database_exception(service):
+    """
+    Method should propagate DatabaseException, raised in document_repository
+    """
+    service.document_repository.get_documents = AsyncMock(side_effect=DatabaseException(operation="get_documents", detail="error details"))
+
+    with pytest.raises(DatabaseException, match="get_documents"):
+        await service.get_documents(user_id=1, cursor=15)
+
+@pytest.mark.asyncio
+async def test_get_documents_without_cursor(service, mocked_existing_document):
+    """
+    Method is being called without cursor param, simulating first page request. Should return valid DocumentRespone with next_cursor
+    """
+
+    service.document_repository.get_documents = AsyncMock(return_value = ([mocked_existing_document, mocked_existing_document],14))
+    result = await service.get_documents(user_id=1)
+
+    assert result.next_cursor == 14
+    assert len(result.documents) == 2
+    assert result.documents[0].id == 12
+
+@pytest.mark.asyncio
+async def test_get_documents_not_returning_cursor(service, mocked_existing_document):
+    """
+    Method should return valid DocumentResponse without next_cursor
+    """
+
+    service.document_repository.get_documents = AsyncMock(return_value = ([mocked_existing_document, mocked_existing_document], None))
+    result = await service.get_documents(user_id=1, cursor=11)
+
+    assert len(result.documents) == 2
+    assert result.documents[0].id == 12
+    assert result.next_cursor == None
+
+@pytest.mark.asyncio
+async def test_get_documents(service, mocked_existing_document):
+    """
+    Method should return valid DocumentResponse with next_cursor
+    """
+
+    service.document_repository.get_documents = AsyncMock(return_value = ([mocked_existing_document, mocked_existing_document],14))
+    result = await service.get_documents(user_id=1, cursor=11)
+
+    assert result.next_cursor == 14
+    assert len(result.documents) == 2
+    assert result.documents[0].id == 12
+
+
+# test get document name and id 
+@pytest.mark.asyncio
+async def test_get_document_and_id_non_existing_document(service):
+    """
+    Method should raise NotFoundException due to None response from repository
+    """
+    service.document_repository.get_document = AsyncMock(return_value=None)
+
+    with pytest.raises(NotFoundException, match="document"):
+        await service.get_document_name_and_id(user_id=1, document_id=12)
+
+@pytest.mark.asyncio
+async def test_get_document_and_id(service, mocked_existing_document):
+    """
+    Method should return tuple of document id and original filename
+    """
+    service.document_repository.get_document = AsyncMock(return_value=mocked_existing_document)
+    result = await service.get_document_name_and_id(user_id=1, document_id=12)
+
+    assert result == (mocked_existing_document.id, mocked_existing_document.original_filename)

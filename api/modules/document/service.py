@@ -175,7 +175,7 @@ class DocumentService:
             raise DatabaseException(detail=str(e), operation="delete_document")
 
 
-    async def get_documents(self, user_id:int, cursor:int | None)-> PaginatedDocuments:
+    async def get_documents(self, user_id:int, cursor:int | None = None)-> PaginatedDocuments:
         documents, cursor = await self.document_repository.get_documents(user_id, cursor)
         return PaginatedDocuments(
             documents=[DocumentResponse.model_validate(document) for document in documents],
