@@ -8,7 +8,7 @@ from shared.config import settings
 
 database_url = f"postgresql+asyncpg://{settings.DATABASE_USER}:{settings.DATABASE_PASSWORD}@{settings.DB_HOST}:{settings.DATABASE_PORT}/{settings.DB_NAME}"
 
-engine = create_async_engine( # creates a engine / connection / postgres pool
+engine = create_async_engine( # creates an engine / connection / postgres pool
     database_url,
     pool_size=settings.DB_POOL_SIZE,
     pool_recycle=settings.DB_POOL_TTL,
@@ -33,16 +33,8 @@ SyncSessionLocal = sessionmaker(
 )
 
 async def get_db(): # creates new sessison for each request : in each incoming request this function gets called to have the db ready and 
-    async with AsyncSessionLocal() as session:
-        try:
-            yield session # returns session and pauses function 
-        finally:
-            await session.close() #closes session in the end 
-
-
-def get_sync_db():
-    db = SyncSessionLocal()
+    session = AsyncSessionLocal() # create new Session
     try:
-        yield db
-    except Exception:
-        db.close
+        yield session # returns session and pauses function (yield)
+    finally: # executed after response
+        await session.close() # close session after request

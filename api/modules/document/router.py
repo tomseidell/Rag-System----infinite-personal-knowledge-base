@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, UploadFile, Response
+from typing import Annotated
 
 from api.modules.document.dependencies import get_document_service
 from api.modules.document.schemas import PaginatedDocuments, DocumentUploadResponse
@@ -8,12 +9,16 @@ from api.modules.user.dependencies import get_current_user_id
 
 router = APIRouter()
 
+CurrentUserDep = Annotated[int, Depends(get_current_user_id)]
+DocumentServiceDep = Annotated[DocumentService, Depends(get_document_service)]
+
+
 @router.post("/", status_code=201, response_model=DocumentUploadResponse)
 async def upload(
     file:UploadFile,
     title:str | None,
-    current_user: int = Depends(get_current_user_id),
-    document_service:DocumentService = Depends(get_document_service)
+    current_user: CurrentUserDep,
+    document_service:DocumentServiceDep
     ):
     return await document_service.upload_document(user_id=current_user, title=title, file=file)
  
@@ -21,8 +26,8 @@ async def upload(
 @router.get("/{document_id}/download", status_code=200)
 async def get_document(
     document_id:int,
-    current_user: int = Depends(get_current_user_id),
-    document_service:DocumentService = Depends(get_document_service)
+    current_user: CurrentUserDep,
+    document_service:DocumentServiceDep
     ):
     document =  await document_service.get_document(user_id=current_user, document_id=document_id)
     return Response(
@@ -34,16 +39,16 @@ async def get_document(
 @router.delete("/{document_id}", status_code=204)
 async def delete(
     document_id:int,
-    current_user: int = Depends(get_current_user_id),
-    document_service:DocumentService = Depends(get_document_service)
+    current_user: CurrentUserDep,
+    document_service:DocumentServiceDep
     ):
     await document_service.delete_document(document_id=document_id, user_id=current_user)
 
 
 @router.get("/", status_code=200, response_model=PaginatedDocuments)
 async def get_documents(
-    cursor:int | None = None,
-    current_user: int = Depends(get_current_user_id),
-    document_service:DocumentService = Depends(get_document_service)
+    current_user: CurrentUserDep,
+    document_service:DocumentServiceDep,
+    cursor:int | None = None
     ):
     return await document_service.get_documents(user_id=current_user, cursor=cursor)
