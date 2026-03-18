@@ -35,7 +35,7 @@ print("load task")
     retry_backoff = True # increase time between retries exponentially 
 )
 def process_document(self: Task, content: bytes, document_id: int, user_id: int, filename: str, content_type: str):
-    db = SyncSessionLocal()
+    db = SyncSessionLocal() # create new Database Session
     storage_service = StorageService()
     qdrant_service = QdrantService()
     ollama_service = OllamaService()
@@ -62,35 +62,30 @@ def process_document(self: Task, content: bytes, document_id: int, user_id: int,
         del text
         gc.collect()
         document_service.log_memory("After Text Cleanup")
-        
-        # create dense embeddings 
-        dense_embeddings = ollama_service.embed_text(chunks=chunks)
-        document_service.log_memory(f"After Embeddings ({len(dense_embeddings)} vectors)")
-        
-        # save chunks to database
+
+        # flush chunks to database
         chunk_objects: list[Chunk] = chunk_service.create_chunks_from_text(
             chunks=chunks, 
             user_id=user_id, 
             document_id=document_id
         )
-        document_service.log_memory(f"After saving chunks to db ({len(chunk_objects)} objects)")
-
         
-        # create sparse embeddings and save chunks in vector db
+        # create dense embeddings 
+        dense_embeddings = ollama_service.embed_text(chunks=chunks)
+        document_service.log_memory(f"After Dense Embeddings ({len(dense_embeddings)} vectors)")
+
+        # create sparse embeddings
         sparse_embeddings = qdrant_service.create_sparse_embedding(chunks)
+        document_service.log_memory(f"After Sparse Embeddings ({len(dense_embeddings)} vectors)")
 
         # safe chunks to vector db
         qdrant_insert_result = qdrant_service.insert_chunks(chunk_objects=chunk_objects, dense_embeddings=dense_embeddings, sparse_embeddings=sparse_embeddings )
 
-        del chunks
+        del chunks, sparse_embeddings, dense_embeddings, chunk_objects
         gc.collect()
-        document_service.log_memory("After Chunks Cleanup")
+        document_service.log_memory("After Cleanup")
 
         chunk_ids = qdrant_insert_result.chunk_ids
-        document_service.log_memory(f"After Qdrant Insert ({len(chunk_ids)} inserted)")
-        del dense_embeddings, chunk_objects
-        gc.collect()
-        document_service.log_memory("After Embeddings Cleanup")
         
         # upload file to gcp bucket 
         storage_path = storage_service.upload_file(
