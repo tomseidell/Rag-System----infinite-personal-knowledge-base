@@ -14,7 +14,7 @@ ChatServiceDep = Annotated[ChatService, Depends(get_chat_service)]
 CurrentUserDep = Annotated[int, Depends(get_current_user_id)]
 
 @router.post("/",status_code=200)
-async def postMessage(request:ChatRequest, current_user: CurrentUserDep, chat_service:ChatServiceDep):
+async def post_message(request:ChatRequest, current_user: CurrentUserDep, chat_service:ChatServiceDep):
     async def generate():  
         async for chunk in chat_service.post_message(user_id=current_user, message=request.message):
             yield f"data: {chunk}\n\n"
