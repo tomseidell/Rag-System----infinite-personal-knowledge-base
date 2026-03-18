@@ -30,7 +30,7 @@ class AsyncStorageService:
         return self._storage_client
     
     
-    async def upload_file(self, content: bytes, filename: str, user_id: int, content_type:str) -> str:
+    async def upload_file(self, content: bytes, filename: str, user_id: int) -> str:
         try:
             blob_name = f"user_{user_id}/{filename}"
             await self.storage_client.upload(object_name=blob_name, bucket=self.bucket_name, file_data=content)

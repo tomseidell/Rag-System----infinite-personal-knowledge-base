@@ -19,7 +19,7 @@ def get_user_service(repo: UserRepository = Depends(get_user_repository)):
 security = HTTPBearer() # returns scheme and credentials
 
 # dynamic, uncached function
-async def get_current_user_id(credentials:HTTPAuthorizationCredentials = Depends(security)) -> int:
+def get_current_user_id(credentials:HTTPAuthorizationCredentials = Depends(security)) -> int:
      """Extracts and validates jwt from request and returns user id """
      token = credentials.credentials
      user_id = decode_access_token(token) # throws error if token is invalid
