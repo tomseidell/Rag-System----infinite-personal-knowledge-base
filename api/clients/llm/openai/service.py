@@ -1,6 +1,6 @@
 from openai import AsyncOpenAI
 import openai 
-from api.clients.llm.openai.exceptions import OpenaiException
+from shared.core.exceptions import OpenaiException
 from api.clients.llm.base_service import BaseLLMService
 from typing import AsyncGenerator
 
