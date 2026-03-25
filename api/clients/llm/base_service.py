@@ -7,5 +7,5 @@ class BaseLLMService(ABC):
         pass
     
     @abstractmethod
-    async def create_message(self, texts: list[str], user_input: str) -> AsyncGenerator[str, None]:
+    def create_message(self, texts: list[str], user_input: str) -> AsyncGenerator[str, None]:
         pass
