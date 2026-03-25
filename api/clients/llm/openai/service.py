@@ -16,11 +16,11 @@ class OpenaiService(BaseLLMService):
                 input=text
             )
             return response.data[0].embedding
-        except openai.AuthenticationError as e:
+        except openai.AuthenticationError:
             raise OpenaiException(operation="embed_text", detail="invalid API Key")
-        except openai.RateLimitError as e:
+        except openai.RateLimitError:
             raise OpenaiException(operation="embed_text", detail="Rate Limit")
-        except openai.APIConnectionError as e:
+        except openai.APIConnectionError:
             raise OpenaiException(operation="embed_text", detail="connection error")
         except openai.APIError as e:
             raise OpenaiException(operation="embed_text", detail=str(e))
@@ -41,11 +41,11 @@ class OpenaiService(BaseLLMService):
             async for event in stream:
                 if event.type == "response.output_text.delta":
                     yield event.delta
-        except openai.AuthenticationError as e:
+        except openai.AuthenticationError:
             raise OpenaiException(operation="create_message", detail="invalid API Key")
-        except openai.RateLimitError as e:
+        except openai.RateLimitError:
             raise OpenaiException(operation="create_message", detail="Rate Limit")
-        except openai.APIConnectionError as e:
+        except openai.APIConnectionError:
             raise OpenaiException(operation="create_message", detail="connection error")
         except openai.APIError as e:
             raise OpenaiException(operation="create_message", detail=str(e))
