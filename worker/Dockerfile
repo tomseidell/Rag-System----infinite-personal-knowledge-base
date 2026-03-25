@@ -1,4 +1,4 @@
-FROM python:3.11
+FROM python:3.12-slim
 
 WORKDIR /app 
 
@@ -7,6 +7,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-ENV PYTHONPATH=/app
+ENV PYTHONPATH=/app \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 
 
 CMD ["celery", "-A", "worker.celery_app", "worker", "--loglevel=info", "-Q", "documents", "--concurrency=1"]
