@@ -50,7 +50,7 @@ class QdrantService:
             self.client.create_collection(
                 collection_name="second_brain",
                 vectors_config={
-                    "dense": VectorParams(size=768, distance=Distance.COSINE),
+                    "dense": VectorParams(size=int(os.getenv("DENSE_VECTOR_SIZE", "768")), distance=Distance.COSINE),
                 },
                 sparse_vectors_config={
                     "sparse": models.SparseVectorParams()
