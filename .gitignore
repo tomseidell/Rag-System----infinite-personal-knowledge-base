@@ -83,4 +83,7 @@ secondbrain-477817-0b2d8df0c2b0.json
 todos.md
 
 
-.terraform/
+terraform/.terraform/
+terraform/terraform.tfstate
+terraform/terraform.tfstate.backup
+terraform/terraform.tfvars
