@@ -1,6 +1,6 @@
 import ollama
 import os
-from api.clients.llm.ollama.exceptions import OllamaException
+from shared.core.exceptions import OllamaException
 import logging
 from typing import AsyncGenerator
 from api.clients.llm.base_service import BaseLLMService

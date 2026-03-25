@@ -15,10 +15,12 @@ from worker.chunk.chunk_service import ChunkServiceSync
 from worker.document.document_repository import DocumentRepositorySync
 from worker.document.document_service import DocumentService
 
-from shared.core.exceptions import OllamaException, QdrantException, StorageException
+from shared.core.exceptions import OllamaException, QdrantException, StorageException, OpenaiException
 from worker.clients.storage_service import StorageService
 from worker.clients.qdrant_service import QdrantService
-from worker.clients.ollama_service import OllamaService
+from worker.clients.llm.ollama_service import OllamaService
+
+from worker.clients.llm.dependency import get_llm_service
 
 logger = logging.getLogger(__name__)
 
@@ -38,7 +40,7 @@ def process_document(self: Task, content: bytes, document_id: int, user_id: int,
     db = SyncSessionLocal() # create new Database Session
     storage_service = StorageService()
     qdrant_service = QdrantService()
-    ollama_service = OllamaService()
+    llm_service = get_llm_service()
     chunk_repo = ChunkRepositorySync(db=db)
     chunk_service = ChunkServiceSync(repo=chunk_repo)
     document_repo = DocumentRepositorySync(db=db)
@@ -71,7 +73,7 @@ def process_document(self: Task, content: bytes, document_id: int, user_id: int,
         )
         
         # create dense embeddings 
-        dense_embeddings = ollama_service.embed_text(chunks=chunks)
+        dense_embeddings = llm_service.embed_text(chunks=chunks)
         document_service.log_memory(f"After Dense Embeddings ({len(dense_embeddings)} vectors)")
 
         # create sparse embeddings
@@ -114,7 +116,7 @@ def process_document(self: Task, content: bytes, document_id: int, user_id: int,
         document_service.log_memory("Task Success")
 
     # retry for 3 error types
-    except (OllamaException, QdrantException, StorageException) as e:
+    except (OllamaException, QdrantException, StorageException, OpenaiException) as e:
         logger.error(f"Service exception: {e}")
         db.rollback()
         
