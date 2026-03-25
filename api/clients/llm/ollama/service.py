@@ -1,14 +1,15 @@
 import ollama
 import os
-from api.clients.ollama.exceptions import OllamaException
+from api.clients.llm.ollama.exceptions import OllamaException
 import logging
 from typing import AsyncGenerator
+from api.clients.llm.base_service import BaseLLMService
 
 
 logger = logging.getLogger(__name__)
 
 
-class OllamaServiceAsync():
+class OllamaServiceAsync(BaseLLMService):
     def __init__(self):
         self.client = ollama.AsyncClient(host=os.getenv("OLLAMA_HOST", "http://host.docker.internal:11434"))
     

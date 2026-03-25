@@ -19,10 +19,13 @@ class AsyncQdrantService:
 
 
     async def ensure_collection(self):
-            try:
-                await self.client.get_collection("second_brain")
-            except Exception:
-                await self.client.create_collection("second_brain")
+        collection = await self.client.get_collection("second_brain")
+        if not collection:
+            raise QdrantException(
+                operation="ensure_collection",
+                detail="Collection 'second_brain' does not exist. Run worker first."
+            )
+
 
     async def delete_many_chunks(self,chunk_ids:list[ExtendedPointId]) -> None:
         try:

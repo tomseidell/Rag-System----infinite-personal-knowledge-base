@@ -1,17 +1,17 @@
-from api.clients.ollama.service import OllamaServiceAsync
 from api.clients.qdrant.service import AsyncQdrantService   
 from api.modules.document.service import DocumentService
 from api.clients.redis.service import RedisService
 from api.modules.chat.schemas import Ressource
+from api.clients.llm.base_service import BaseLLMService
 import hashlib
 import json
 
 
 
 class ChatService():
-    def __init__(self, qdrant_service:AsyncQdrantService, ollama_service:OllamaServiceAsync, document_service:DocumentService, redis_service:RedisService):
+    def __init__(self, qdrant_service:AsyncQdrantService, llm_service:BaseLLMService, document_service:DocumentService, redis_service:RedisService):
         self.qdrant_service = qdrant_service
-        self.ollama_service = ollama_service
+        self.llm_service = llm_service
         self.document_service = document_service
         self.redis_service = redis_service
 
@@ -34,7 +34,7 @@ class ChatService():
             yield json.dumps(data["ressources"]) # create json string from list
             return
 
-        embedding = await self.ollama_service.embed_text(message)
+        embedding = await self.llm_service.embed_text(message)
         chunk_infos = await self.qdrant_service.get_matching_chunks(dense_vector=embedding, query_text=message, user_id=user_id)
         texts: list[str] = [chunk.payload["content"] for chunk in chunk_infos if chunk.payload]
         sources: list[int] = [chunk.payload["document_id"] for chunk in chunk_infos if chunk.payload]
@@ -47,7 +47,7 @@ class ChatService():
 
 
         chunks : list[str] = []
-        async for chunk in self.ollama_service.create_message(texts=texts, user_input=message):
+        async for chunk in self.llm_service.create_message(texts=texts, user_input=message):
             chunks.append(chunk)
             yield chunk
         # return ressources at the end, separately 

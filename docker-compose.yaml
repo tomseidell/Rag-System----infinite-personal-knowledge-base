@@ -10,7 +10,8 @@ services:
       ports:
         - "8000:8000"
       volumes: 
-        - .:/app # take all changes from lokal folder and map changes to running docker container
+        - .:/app # take all changes from lokal folder and map changes to running docker container (bind mound)
+        - huggingface_cache:/app/.cache/huggingface # create named volume of huggingface cache 
       depends_on:
         - redis
         - db
@@ -105,4 +106,5 @@ volumes:
   qdrant_data:     
   pgadmin_data:  
   grafana_data:
+  huggingface_cache:
                             
