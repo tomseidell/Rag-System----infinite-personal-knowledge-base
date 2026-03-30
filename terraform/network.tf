@@ -65,7 +65,7 @@ resource "aws_route_table_association" "private" {
 resource "aws_route" "private" {
     count = var.az_count
     route_table_id = aws_route_table.private[count.index].id
-    nat_gateway_id = aws_nat_gateway.gw.*.id[ount.index].id
+    nat_gateway_id = aws_nat_gateway.gw[count.index].id
 
      # use route for request to the internet 
     destination_cidr_block = "0.0.0.0/0"
