@@ -21,3 +21,12 @@ variable "api_memory" {
 variable "az_count" {
     description = "Number of Availability Zones to cover in a given region"
 }
+
+
+variable "worker_port"{
+    description = "port where fargate worker instance will run"
+}
+
+variable "redis_port"{
+    description = "port where redis / elasticache will run"
+}
