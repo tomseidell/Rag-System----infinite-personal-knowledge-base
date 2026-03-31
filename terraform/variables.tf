@@ -2,6 +2,11 @@ variable "region" {
     description = "This is the cloud hosting region where the architecture is going to be deployed"
 }
 
+variable "health_check_path" {
+  default = "/health"
+}
+
+
 
 # fargate api
 variable "api_port" {
