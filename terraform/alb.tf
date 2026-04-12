@@ -1,8 +1,10 @@
+# services need to connect to alb, not alb to services
+
 resource "aws_alb" "main" {
     name = "cb-load-balancer"
     # all public subnets (all az's)
     subnets = aws_subnet.public.*.id
-    security_groups = [aws_security_group.lb.id]
+    security_groups = [aws_security_group.lb.id] # connect to lb security group
 }
 
 resource "aws_alb_target_group" "api" {
@@ -36,7 +38,7 @@ resource "aws_alb_listener" "main" {
   protocol = "HTTP"
 
   default_action {
-    # move traffic forward to alb target group
+    # move traffic forward to alb target group => api
     target_group_arn = aws_alb_target_group.api.id
     type = "forward"
   }
