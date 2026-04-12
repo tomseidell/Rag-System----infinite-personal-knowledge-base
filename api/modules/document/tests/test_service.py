@@ -77,7 +77,7 @@ def test_get_file_extension(service):
 @pytest.mark.asyncio # create async test
 async def test_upload_document_too_large_file(service):
     """
-    Method should remove all spaces from a given string
+    Method should fail because given document is too large
     """
 
     mocked_file = AsyncMock()
