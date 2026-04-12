@@ -35,3 +35,49 @@ variable "worker_port"{
 variable "redis_port"{
     description = "port where redis / elasticache will run"
 }
+
+
+# app image url, gets dynamically defined in cd pipeline
+variable "api_image" {
+    description = "Docker image URI from ECR"
+}
+
+# worker image url, gets dynamically defined in cd pipeline
+variable "worker_image" {
+    description = "Docker image URI from ECR"
+}
+
+
+variable "api_fargate_cpu" {
+    default = "1024"
+}
+variable "api_fargate_memory" {
+    default = "2024"
+}
+
+
+variable "worker_fargate_cpu" {
+    default = "512"   
+}
+variable "worker_fargate_memory" {
+    default = "2024"  
+}
+
+
+
+
+variable "api_port" {
+    description = "Port exposed by the docker image"
+    default = 8000  
+}
+
+variable "api_count" {
+  description = "numer of instances"
+  default = 1
+}
+
+variable "worker_count" {
+  description = "numer of instances"
+  default = 2
+}
+
