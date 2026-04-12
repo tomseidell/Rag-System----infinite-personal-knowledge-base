@@ -1,3 +1,7 @@
+# which ip adresses can call certain services
+# which ip adresses can a certain service call
+
+
 resource "aws_security_group" "load_balancer" {
     name        = "cb-load-balancer-security-group"
     description = "controls access to the ALB"
@@ -23,7 +27,7 @@ resource "aws_security_group" "load_balancer" {
         # allow all ports for outgoing traffic
         from_port   = 0
         to_port     = 0
-        # allowed ip for incoming traffic 
+        # allowed ip for outgoing traffic 
         cidr_blocks = ["0.0.0.0/0"]
     }
 }
@@ -100,7 +104,8 @@ resource "aws_security_group" "redis" {
     protocol    = "-1"
     from_port   = 0
     to_port     = 0
-    cidr_blocks = ["0.0.0.0/0"] 
+    # outgoing traffic only to worker and api
+    security_groups = [aws_security_group.worker.id, aws_security_group.api.id]
   }
 
   
