@@ -12,7 +12,7 @@ data "template_file" "api" {
   # template contains container definition for api container
 
   vars = {
-    app_image = var.api_image
+    api_image = var.api_image
     api_port = var.api_port
     api_fargate_cpu = var.api_fargate_cpu
     api_fargate_memory = var.api_fargate_memory
