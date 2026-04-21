@@ -63,7 +63,7 @@ resource "aws_ecs_service" "api" {
 
 
 
-#     worker config 
+#     worker config :
 
 #reads external worker template file and fills it with vars
 data "template_file" "worker" { 
