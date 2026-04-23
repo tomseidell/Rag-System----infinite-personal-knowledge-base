@@ -107,6 +107,19 @@ resource "aws_security_group" "redis" {
     # outgoing traffic only to worker and api
     security_groups = [aws_security_group.worker.id, aws_security_group.api.id]
   }
-
   
+}
+
+
+resource "aws_security_group" "rds" {
+    name   = "rds-security-group"
+    vpc_id = aws_vpc.main.id
+
+    # allow api and worker to call db
+    ingress {
+        protocol        = "tcp"
+        from_port       = 5432
+        to_port         = 5432
+        security_groups = [aws_security_group.api.id, aws_security_group.worker.id]
+    }
 }

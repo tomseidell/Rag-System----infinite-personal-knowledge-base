@@ -81,3 +81,30 @@ variable "worker_count" {
   default = 2
 }
 
+
+# database specific
+
+variable "db_user" {
+  description = "name of the db user"
+}
+
+variable "db_name"{
+    description = "name of the database"
+}
+
+
+# secret manager
+
+variable "openai_api_key" {
+  description = "api key of openai"
+}
+
+variable "qdrant_api_key" {
+  description = "api key of qdrant"
+}
+
+variable "environment" {
+  description = "Deployment environment (e.g. dev, staging, prod)"
+  type        = string
+  default     = "dev"
+}

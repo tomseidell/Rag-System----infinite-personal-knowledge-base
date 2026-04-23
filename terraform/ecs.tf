@@ -12,13 +12,19 @@ data "template_file" "api" {
   # template contains container definition for api container
 
   vars = {
-    api_image = var.api_image
-    api_port = var.api_port
-    api_fargate_cpu = var.api_fargate_cpu
-    api_fargate_memory = var.api_fargate_memory
-
-
-    aws_region = var.region
+    api_image          = var.api_image
+    api_fargate_cpu    = var.api_fargate_cpu
+    api_fargate_memory = var.api_memory
+    aws_region         = var.region
+    api_port           = var.api_port
+    db_user            = var.db_user
+    db_name            = var.db_name
+    db_host            = aws_db_instance.postgres.endpoint
+    environment        = var.environment
+    db_password_arn    = "${aws_db_instance.postgres.master_user_secret[0].secret_arn}:password::"
+    jwt_secret_arn     = "${aws_secretsmanager_secret.main.arn}:JWT_SECRET::"
+    openai_key_arn     = "${aws_secretsmanager_secret.main.arn}:OPENAI_API_KEY::"
+    qdrant_key_arn     = "${aws_secretsmanager_secret.main.arn}:QDRANT_API_KEY::"
   }
 }
 
@@ -63,7 +69,7 @@ resource "aws_ecs_service" "api" {
 
 
 
-#     worker config 
+#     worker config :
 
 #reads external worker template file and fills it with vars
 data "template_file" "worker" { 
