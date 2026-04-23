@@ -1,5 +1,6 @@
-data "aws_availability_zones" "available" {
+data "aws_availability_zones" "available" { # returns all possible az's of provider region
 }
+
 
 # define ip adress range for vpc
 resource "aws_vpc" "main" {
@@ -11,12 +12,19 @@ resource "aws_subnet" "private" {
   count = var.az_count
   vpc_id = aws_vpc.main.id
   cidr_block = cidrsubnet(aws_vpc.main.cidr_block, 8, count.index)
+
+  # based on count, choose az from above 
+  availability_zone = data.aws_availability_zones.available.names[count.index]
 }
 resource "aws_subnet" "public" {
   count = var.az_count
   vpc_id = aws_vpc.main.id
   map_public_ip_on_launch = true
   cidr_block = cidrsubnet(aws_vpc.main.cidr_block, 8, var.az_count + count.index)
+
+  # based on count, choose az from above 
+  availability_zone = data.aws_availability_zones.available.names[count.index]
+
 }
 
 
