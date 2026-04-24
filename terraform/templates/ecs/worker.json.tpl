@@ -21,10 +21,11 @@
       { "name": "ENVIRONMENT", "value": "${environment}" },
       { "name": "DENSE_VECTOR_SIZE", "value": "768" }
       { "name": "QDRANT_URL", "value": "${qdrant_url}" }
-      { "name": "REDIS_URL", "value": "${redis_url}" }
       { "name": "CELERY_BROKER_URL", "value": "${redis_url}" },
       { "name": "CELERY_RESULT_BACKEND", "value": "${redis_url}" },
-      { "name": "REDIS_URL", "value": "${redis_url}" }
+      { "name": "REDIS_URL", "value": "${redis_url}" },
+      { "name": "S3_BUCKET_NAME", "value": "${s3_bucket_name}" }
+
 
 
     ],
