@@ -4,7 +4,7 @@ resource "aws_alb" "main" {
     name = "cb-load-balancer"
     # all public subnets (all az's)
     subnets = aws_subnet.public.*.id
-    security_groups = [aws_security_group.lb.id] # connect to lb security group
+    security_groups = [aws_security_group.load_balancer.id] # connect to lb security group
 }
 
 resource "aws_alb_target_group" "api" {

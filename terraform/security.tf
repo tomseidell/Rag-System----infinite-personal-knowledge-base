@@ -33,7 +33,7 @@ resource "aws_security_group" "load_balancer" {
 }
 
 resource "aws_security_group" "api" {
-    name = "cb-ec2-access-security-group"
+    name = "cb-api-security-group"
     description = "allow inbound access from the ALB only"
     vpc_id      = aws_vpc.main.id
 
@@ -50,31 +50,22 @@ resource "aws_security_group" "api" {
         protocol = "-1"
         from_port = 0
         to_port = 0
-        # allow api to make ougoing request everywhere 
+        # allow api to make outgoing request everywhere 
         cidr_blocks = ["0.0.0.0/0"]
     }
 }
 
 resource "aws_security_group" "worker" {
-    name = "cb-ec2-access-security-group"
-    description = "allow inbound access from the ALB only"
+    name = "cb-worker-security-group"
+    description = "allow inbound access from api"
     vpc_id      = aws_vpc.main.id
-
-    ingress {
-        protocol = "tcp"
-        from_port = var.redis_port
-        to_port = var.redis_port
-
-        # incoming traffic must come from api security group or elasticache 
-        security_groups = [aws_security_group.redis.id]
-    }
 
     ingress {
         protocol = "tcp"
         from_port = var.worker_port
         to_port = var.worker_port
 
-        # incoming traffic must come from api security group or elasticache 
+        # incoming traffic must come from api security group
         security_groups = [aws_security_group.api.id]
     }
 
@@ -82,34 +73,37 @@ resource "aws_security_group" "worker" {
         protocol = "-1"
         from_port = 0
         to_port = 0
-        # allow api to make ougoing request everywhere 
+        # allow worker to make outgoing request everywhere 
         cidr_blocks = ["0.0.0.0/0"]
     }
 }
 
+# Redis SG without inline rules to avoid cycle with worker SG
 resource "aws_security_group" "redis" {
-  name        = "cb-redis-security-group"
-  description = "allow access to Redis only from Worker"
-  vpc_id      = aws_vpc.main.id
-
-  ingress {
-    protocol        = "tcp"
-    from_port       = var.redis_port
-    to_port         = var.redis_port
-    # only allow incoming traffic from worker and api
-    security_groups = [aws_security_group.worker.id, aws_security_group.api.id] 
-  }
-
-  egress {
-    protocol    = "-1"
-    from_port   = 0
-    to_port     = 0
-    # outgoing traffic only to worker and api
-    security_groups = [aws_security_group.worker.id, aws_security_group.api.id]
-  }
-  
+    name        = "cb-redis-security-group"
+    description = "allow access to Redis from API and Worker"
+    vpc_id      = aws_vpc.main.id
 }
 
+# only allow incoming traffic from api
+resource "aws_security_group_rule" "redis_from_api" {
+    type                     = "ingress"
+    from_port                = var.redis_port
+    to_port                  = var.redis_port
+    protocol                 = "tcp"
+    security_group_id        = aws_security_group.redis.id
+    source_security_group_id = aws_security_group.api.id
+}
+
+# only allow incoming traffic from worker
+resource "aws_security_group_rule" "redis_from_worker" {
+    type                     = "ingress"
+    from_port                = var.redis_port
+    to_port                  = var.redis_port
+    protocol                 = "tcp"
+    security_group_id        = aws_security_group.redis.id
+    source_security_group_id = aws_security_group.worker.id
+}
 
 resource "aws_security_group" "rds" {
     name   = "rds-security-group"
