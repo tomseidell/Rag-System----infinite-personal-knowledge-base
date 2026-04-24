@@ -43,7 +43,7 @@ resource "aws_ecs_service" "api" {
   name = "api-service" # service name
   cluster = aws_ecs_cluster.main.id # runs in main cluster
   task_definition = aws_ecs_task_definition.api.arn # which blue print / task definition to use
-  desired_count = var.api_count # number of container instances
+  desired_count = var.enable_services? var.api_count  : 0# number of container instances
   launch_type = "FARGATE" # start container as managed fargate instance
 
   # container run in private subnet with given network security
@@ -98,7 +98,7 @@ resource "aws_ecs_service" "worker" {
   name = "worker-service"
   cluster = aws_ecs_cluster.main.id
   task_definition = aws_ecs_task_definition.worker.arn
-  desired_count = var.worker_count
+  desired_count = var.enable_services? var.worker_count  : 0
   launch_type = "FARGATE"
 
   network_configuration { 

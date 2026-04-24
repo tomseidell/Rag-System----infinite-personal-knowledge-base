@@ -111,3 +111,11 @@ variable "qdrant_url" {
   type        = string
   description = "Qdrant Cloud URL"
 }
+
+
+
+# config for initial apply
+variable "enable_services" {
+  type    = bool
+  default = true
+}
