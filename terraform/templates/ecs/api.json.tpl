@@ -28,6 +28,14 @@
       { "name": "ACCESS_TOKEN_EXPIRE_MINUTES", "value": "30" },
       { "name": "REFRESH_TOKEN_EXPIRE_DAYS", "value": "30" },
       { "name": "DENSE_VECTOR_SIZE", "value": "768" }
+      { "name": "QDRANT_URL", "value": "${qdrant_url}" }
+      { "name": "REDIS_URL", "value": "${redis_url}" }
+      { "name": "CELERY_BROKER_URL", "value": "${redis_url}" },
+      { "name": "CELERY_RESULT_BACKEND", "value": "${redis_url}" },
+      { "name": "REDIS_URL", "value": "${redis_url}" }
+
+
+
     ],
     "secrets": [
       { "name": "DATABASE_PASSWORD", "valueFrom": "${db_password_arn}" },
