@@ -93,7 +93,7 @@ variable "db_name"{
 }
 
 
-# secret manager
+# secrets and envs
 
 variable "openai_api_key" {
   description = "api key of openai"
@@ -107,4 +107,9 @@ variable "environment" {
   description = "Deployment environment (e.g. dev, staging, prod)"
   type        = string
   default     = "dev"
+}
+
+variable "qdrant_url" {
+  type        = string
+  description = "Qdrant Cloud URL"
 }
