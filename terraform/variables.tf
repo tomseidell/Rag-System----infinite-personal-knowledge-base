@@ -11,6 +11,7 @@ variable "health_check_path" {
 # fargate api
 variable "api_port" {
   description = "port where fargate api instance will run"
+  default = 8000
 }
 variable "api_health_check_path" {
   description = "path to health endpoint"
@@ -52,24 +53,17 @@ variable "api_fargate_cpu" {
     default = "1024"
 }
 variable "api_fargate_memory" {
-    default = "2024"
+    default = "2048"
 }
-
 
 variable "worker_fargate_cpu" {
     default = "512"   
 }
 variable "worker_fargate_memory" {
-    default = "2024"  
+    default = "2048"  
 }
 
 
-
-
-variable "api_port" {
-    description = "Port exposed by the docker image"
-    default = 8000  
-}
 
 variable "api_count" {
   description = "numer of instances"
@@ -79,6 +73,10 @@ variable "api_count" {
 variable "worker_count" {
   description = "numer of instances"
   default = 2
+}
+
+variable "project_name"{
+  default = "second-brain"
 }
 
 
