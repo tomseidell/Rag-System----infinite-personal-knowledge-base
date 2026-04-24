@@ -1,10 +1,104 @@
 name: CD
 
 on:
-  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "api/**"
+      - "worker/**"
 
 jobs:
-  placeholder:
+  deploy:
     runs-on: ubuntu-latest
+
+    env:
+      AWS_REGION: ${{ secrets.AWS_REGION }}
+      ECR_API_REPO: api
+      ECR_WORKER_REPO: worker
+
+      ECS_CLUSTER: main-cluster
+      ECS_API_SERVICE: api-service
+      ECS_WORKER_SERVICE: worker-service
+
+      ECS_API_TASK_FAMILY: api-task
+      ECS_WORKER_TASK_FAMILY: worker-task
+
     steps:
-      - run: echo "CD pipeline coming soon"
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to ECR
+        uses: aws-actions/amazon-ecr-login@v2
+        id: ecr
+
+      - name: Build & push API image
+        env:
+          IMAGE: ${{ steps.ecr.outputs.registry }}/${{ env.ECR_API_REPO }}:${{ github.sha }}
+        run: |
+          docker build -t "$IMAGE" -f api/Dockerfile api
+          docker push "$IMAGE"
+          echo "API_IMAGE=$IMAGE" >> "$GITHUB_ENV"
+
+      - name: Build & push Worker image
+        env:
+          IMAGE: ${{ steps.ecr.outputs.registry }}/${{ env.ECR_WORKER_REPO }}:${{ github.sha }}
+        run: |
+          docker build -t "$IMAGE" -f worker/Dockerfile worker
+          docker push "$IMAGE"
+          echo "WORKER_IMAGE=$IMAGE" >> "$GITHUB_ENV"
+
+      - name: Register new API task definition revision
+        run: |
+          TD=$(aws ecs describe-task-definition --task-definition "$ECS_API_TASK_FAMILY" --query taskDefinition)
+          NEW=$(echo "$TD" | jq --arg IMAGE "$API_IMAGE" '
+            .containerDefinitions |= (map(if .name=="api" then .image=$IMAGE else . end))
+            | del(
+              .taskDefinitionArn,
+              .revision,
+              .status,
+              .requiresAttributes,
+              .compatibilities,
+              .registeredAt,
+              .registeredBy
+            )')
+          ARN=$(aws ecs register-task-definition --cli-input-json "$NEW" --query taskDefinition.taskDefinitionArn --output text)
+          echo "API_TD_ARN=$ARN" >> "$GITHUB_ENV"
+
+      - name: Deploy API service
+        run: |
+          aws ecs update-service \
+            --cluster "$ECS_CLUSTER" \
+            --service "$ECS_API_SERVICE" \
+            --task-definition "$API_TD_ARN" \
+            --force-new-deployment
+
+      - name: Register new Worker task definition revision
+        run: |
+          TD=$(aws ecs describe-task-definition --task-definition "$ECS_WORKER_TASK_FAMILY" --query taskDefinition)
+          NEW=$(echo "$TD" | jq --arg IMAGE "$WORKER_IMAGE" '
+            .containerDefinitions |= (map(if .name=="worker" then .image=$IMAGE else . end))
+            | del(
+              .taskDefinitionArn,
+              .revision,
+              .status,
+              .requiresAttributes,
+              .compatibilities,
+              .registeredAt,
+              .registeredBy
+            )')
+          ARN=$(aws ecs register-task-definition --cli-input-json "$NEW" --query taskDefinition.taskDefinitionArn --output text)
+          echo "WORKER_TD_ARN=$ARN" >> "$GITHUB_ENV"
+
+      - name: Deploy Worker service
+        run: |
+          aws ecs update-service \
+            --cluster "$ECS_CLUSTER" \
+            --service "$ECS_WORKER_SERVICE" \
+            --task-definition "$WORKER_TD_ARN" \
+            --force-new-deployment

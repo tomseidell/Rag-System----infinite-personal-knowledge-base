@@ -4,7 +4,7 @@ resource "aws_s3_bucket" "main" {
 }
 
 resource "aws_s3_bucket_public_access_block" "shared" {
-  bucket = aws_s3_bucket.main.id # commect to bucket
+  bucket = aws_s3_bucket.main.id # connect to bucket
 
   block_public_acls       = true
   block_public_policy     = true
