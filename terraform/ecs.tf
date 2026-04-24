@@ -25,6 +25,9 @@ data "template_file" "api" {
     jwt_secret_arn     = "${aws_secretsmanager_secret.main.arn}:JWT_SECRET::"
     openai_key_arn     = "${aws_secretsmanager_secret.main.arn}:OPENAI_API_KEY::"
     qdrant_key_arn     = "${aws_secretsmanager_secret.main.arn}:QDRANT_API_KEY::"
+    qdrant_url         = var.qdrant_url
+    redis_url          = "redis://${aws_elasticache_cluster.main.cache_nodes[0].address}:${aws_elasticache_cluster.main.port}"
+
   }
 }
 
@@ -73,19 +76,26 @@ resource "aws_ecs_service" "api" {
 
 #reads external worker template file and fills it with vars
 data "template_file" "worker" { 
-  template = file("./templates/ecs/worker.json.tpl") # route to worker template file
-
-  # template contains container definition for worker container
+  template = file("./templates/ecs/worker.json.tpl")
 
   vars = {
-
     worker_image          = var.worker_image
     worker_fargate_cpu    = var.worker_fargate_cpu
     worker_fargate_memory = var.worker_fargate_memory
+    aws_region            = var.region
+    db_user               = var.db_user
+    db_name               = var.db_name
+    db_host               = aws_db_instance.postgres.endpoint
+    environment           = var.environment
+    db_password_arn       = "${aws_db_instance.postgres.master_user_secret[0].secret_arn}:password::"
+    openai_key_arn        = "${aws_secretsmanager_secret.main.arn}:OPENAI_API_KEY::"
+    qdrant_key_arn        = "${aws_secretsmanager_secret.main.arn}:QDRANT_API_KEY::"
+    qdrant_url            = var.qdrant_url
+    redis_url             = "redis://${aws_elasticache_cluster.main.cache_nodes[0].address}:${aws_elasticache_cluster.main.port}"
 
-    aws_region = var.region
   }
-} 
+}
+
 
 resource "aws_ecs_task_definition" "worker" {
     family = "worker-task"
