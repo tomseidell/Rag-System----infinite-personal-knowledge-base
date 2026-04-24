@@ -18,7 +18,10 @@ resource "aws_db_instance" "postgres" {
     db_name = var.db_name
     username = var.db_user
 
+    backup_retention_period = 3 # 3 days backup
+
     # secret manager creates db password at runtime
+    # automatically rotates password every 7 days 
     manage_master_user_password = true
 
     
