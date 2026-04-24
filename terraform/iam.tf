@@ -1,3 +1,25 @@
+resource "aws_iam_policy" "s3_access" {
+  name = "s3-access"
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect = "Allow"
+      Action = [
+        "s3:GetObject",
+        "s3:PutObject",
+        "s3:DeleteObject",
+        "s3:ListBucket"
+      ]
+      Resource = [
+        aws_s3_bucket.shared.arn,          # für ListBucket
+        "${aws_s3_bucket.shared.arn}/*"    # für Get/Put/Delete auf Objekte
+      ]
+    }]
+  })
+}
+
+
 resource "aws_iam_policy" "secrets_access" {
   name = "secrets-access"
 
@@ -41,4 +63,9 @@ resource "aws_iam_role_policy_attachment" "ecs_secrets" {
 
   # use self created policy from above
   policy_arn = aws_iam_policy.secrets_access.arn # what is allowed to be done
+}
+
+resource "aws_iam_role_policy_attachment" "ecs_s3" {
+  role       = aws_iam_role.ecs_task_execution_role.name
+  policy_arn = aws_iam_policy.s3_access.arn
 }
