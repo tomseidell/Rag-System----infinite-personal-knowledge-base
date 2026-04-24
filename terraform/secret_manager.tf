@@ -1,5 +1,6 @@
 resource "aws_secretsmanager_secret" "main" {
   name = "main_secret_manager"
+  recovery_window_in_days = 0
 }
 
 resource "random_password" "jwt_secret" {
