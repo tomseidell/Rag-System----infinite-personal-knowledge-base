@@ -1,71 +1,56 @@
-from shared.config import settings
 import logging
+
+import aioboto3
+from botocore.exceptions import ClientError
+
+from shared.config import settings
 from api.clients.storage.exceptions import StorageException
 from shared.core.exceptions import NotFoundException
-
-from gcloud.aio.storage import Storage
-
-import aiohttp
-from aiohttp import ClientResponseError
-
-
 
 logger = logging.getLogger(__name__)
 
 
 class AsyncStorageService:
     def __init__(self):
-        try:
-            self._storage_client = None
-            self.bucket_name = (settings.GCS_BUCKET_NAME)
-        except Exception as e:
-            logger.critical(f"Failed to initialize storage {e}", exc_info=True)
+        self._session = aioboto3.Session()
+        self.bucket_name = settings.S3_BUCKET_NAME
+        self._endpoint_url = settings.S3_ENDPOINT_URL
 
-
-    @property # gets called when calling self.storage_client
-    def storage_client(self):
-        if self._storage_client is None: # if not already existing, create new 
-            session = aiohttp.ClientSession()
-            self._storage_client = Storage(session=session)
-        return self._storage_client
-    
-    
     async def upload_file(self, content: bytes, filename: str, user_id: int) -> str:
         try:
-            blob_name = f"user_{user_id}/{filename}"
-            await self.storage_client.upload(object_name=blob_name, bucket=self.bucket_name, file_data=content)
+            blob_name = f"user_{user_id}/{filename}" # allows to distinguish ressources between users
+            async with self._session.client("s3", endpoint_url=self._endpoint_url) as s3:  # type: ignore[attr-defined]
+                await s3.put_object(Bucket=self.bucket_name, Key=blob_name, Body=content)
             return blob_name
         except Exception as e:
             logger.critical(f"Failed to upload file to storage: {e}", exc_info=True)
             raise StorageException(operation="upload_file") from e
 
-
-    async def get_file(self, storage_path:str) -> bytes:
+    async def get_file(self, storage_path: str) -> bytes:
         try:
-            content = await self.storage_client.download(object_name=storage_path, bucket=self.bucket_name)
-            return content ## return content as bytes
-        except ClientResponseError as e:
-            if e. status == 404:
-                logger.warning(f"File not found in GCS (404): {storage_path}") # Nur eine Warnung, kein kritischer Fehler!
+            async with self._session.client("s3", endpoint_url=self._endpoint_url) as s3:  # type: ignore[attr-defined]
+                response = await s3.get_object(Bucket=self.bucket_name, Key=storage_path)
+                return await response["Body"].read()
+        except ClientError as e:
+            if e.response["Error"]["Code"] == "NoSuchKey":
+                logger.warning(f"File not found in S3 (NoSuchKey): {storage_path}")
                 raise NotFoundException(ressource=f"File: {storage_path}") from e
-            else:
-                logger.critical(f"Storage error: {e}", exc_info=True)
-                raise StorageException(operation="get_file") from e 
+            logger.critical(f"S3 error getting file: {e}", exc_info=True)
+            raise StorageException(operation="get_file") from e
         except Exception as e:
-            logger.critical(f"Unexcepted error: {e}", exc_info=True)
-            raise StorageException(operation="get_file") from e 
-        
+            logger.critical(f"Unexpected error getting file: {e}", exc_info=True)
+            raise StorageException(operation="get_file") from e
 
-    async def delete_file(self, storage_path:str) -> None:
+    async def delete_file(self, storage_path: str) -> None:
         try:
-            await self.storage_client.delete(object_name=storage_path, bucket=self.bucket_name)
-        except ClientResponseError as e:
-            if e. status == 404:
-                logger.warning(f"File not found in GCS (404): {storage_path}") # Nur eine Warnung, kein kritischer Fehler!
+            async with self._session.client("s3", endpoint_url=self._endpoint_url) as s3:  # type: ignore[attr-defined]
+                await s3.delete_object(Bucket=self.bucket_name, Key=storage_path)
+        except ClientError as e:
+            if e.response["Error"]["Code"] == "NoSuchKey":
+                logger.warning(f"File not found in S3 (NoSuchKey): {storage_path}")
                 raise NotFoundException(ressource=f"File: {storage_path}") from e
-            else:
-                logger.critical(f"Storage error: {e}", exc_info=True)
-                raise StorageException(operation="delete_file") from e 
+            logger.critical(f"S3 error deleting file: {e}", exc_info=True)
+            raise StorageException(operation="delete_file") from e
         except Exception as e:
-            logger.critical(f"Unexcepted error: {e}", exc_info=True)
-            raise StorageException(operation="delete_file") from e 
+            logger.critical(f"Unexpected error deleting file: {e}", exc_info=True)
+            raise StorageException(operation="delete_file") from e
