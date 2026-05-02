@@ -13,15 +13,6 @@ variable "api_port" {
   description = "port where fargate api instance will run"
   default = 8000
 }
-variable "api_health_check_path" {
-  description = "path to health endpoint"
-}
-variable "api_cpu" {
-  description = "amount of cpu fargate api requires"
-}
-variable "api_memory" {
-  description = "amount of ram fargate api requires"
-}
 
 # network
 variable "az_count" {
@@ -51,17 +42,21 @@ variable "worker_image" {
 
 
 variable "api_fargate_cpu" {
-    default = "1024"
+  description = "vCPU units for the API container (HTTP server, DB queries only)"
+  default     = "512"
 }
 variable "api_fargate_memory" {
-    default = "2048"
+  description = "Memory in MB for the API container"
+  default     = "1024"
 }
 
 variable "worker_fargate_cpu" {
-    default = "512"   
+  description = "vCPU units for the worker container (PDF processing, ML embeddings)"
+  default     = "1024"
 }
 variable "worker_fargate_memory" {
-    default = "2048"  
+  description = "Memory in MB for the worker container (FastEmbed model + PDF content in RAM)"
+  default     = "2048"
 }
 
 
