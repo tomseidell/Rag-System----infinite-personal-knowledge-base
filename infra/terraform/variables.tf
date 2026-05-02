@@ -20,10 +20,6 @@ variable "az_count" {
 }
 
 
-variable "worker_port"{
-    description = "port where fargate worker instance will run"
-}
-
 variable "redis_port"{
     description = "port where redis / elasticache will run"
 }
@@ -91,10 +87,12 @@ variable "db_name"{
 
 variable "openai_api_key" {
   description = "api key of openai"
+  sensitive   = true
 }
 
 variable "qdrant_api_key" {
   description = "api key of qdrant"
+  sensitive   = true
 }
 
 variable "environment" {
