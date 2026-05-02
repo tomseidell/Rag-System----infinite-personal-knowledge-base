@@ -59,16 +59,7 @@ resource "aws_security_group" "worker" {
     name = "cb-worker-security-group"
     description = "allow inbound access from api"
     vpc_id      = aws_vpc.main.id
-
-    ingress {
-        protocol = "tcp"
-        from_port = var.worker_port
-        to_port = var.worker_port
-
-        # incoming traffic must come from api security group
-        security_groups = [aws_security_group.api.id]
-    }
-
+    
     egress {
         protocol = "-1"
         from_port = 0
