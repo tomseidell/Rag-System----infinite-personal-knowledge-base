@@ -12,6 +12,7 @@ sys.path.insert(0, str(ROOT_DIR))
 from api.exception_handlers import register_exception_handlers  # noqa: E402
 from api.clients.qdrant.dependencies import get_qdrant_service  # noqa: E402
 from api.routes import router as routes  # noqa: E402
+from shared.config import settings  # noqa: E402
 
 
 @asynccontextmanager
@@ -30,10 +31,11 @@ app = FastAPI(
 
 app.middleware("http")(rate_limit_middleware)
 
-# Configure CORS
+cors_origins = ["*"] if settings.ENVIRONMENT == "development" else [settings.FRONTEND_URL]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # In production, replace with specific origins
+    allow_origins=cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
