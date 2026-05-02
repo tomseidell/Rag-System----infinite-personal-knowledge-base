@@ -1,18 +1,14 @@
 name: CD
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - "api/**"
-      - "worker/**"
+  workflow_dispatch: # manual trigger
 
 jobs:
   deploy:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-latest # linux vm
 
-    env:
-      AWS_REGION: ${{ secrets.AWS_REGION }}
+    env: # set env variables
+      AWS_REGION: ${{ secrets.AWS_REGION }} # take from github env
       ECR_API_REPO: api
       ECR_WORKER_REPO: worker
 
@@ -24,41 +20,44 @@ jobs:
       ECS_WORKER_TASK_FAMILY: worker-task
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4 # clone local code to vm
 
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
+        uses: aws-actions/configure-aws-credentials@v4 # use aws action to login to aws cli
+        with: # take aws credentials from github env
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Login to ECR
-        uses: aws-actions/amazon-ecr-login@v2
-        id: ecr
+        uses: aws-actions/amazon-ecr-login@v2 # use aws action to login to aws ecr with aws config from above
+        id: ecr # save output in "ecr" var
 
       - name: Build & push API image
         env:
-          IMAGE: ${{ steps.ecr.outputs.registry }}/${{ env.ECR_API_REPO }}:${{ github.sha }}
-        run: |
-          docker build -t "$IMAGE" -f api/Dockerfile api
+          IMAGE: ${{ steps.ecr.outputs.registry }}/${{ env.ECR_API_REPO }}:${{ github.sha }} # github.sha => unique hash id for commit
+        run: | # build image from dockerfile in api folder and push to ecr
+          docker build -t "$IMAGE" -f api/Dockerfile . 
           docker push "$IMAGE"
           echo "API_IMAGE=$IMAGE" >> "$GITHUB_ENV"
 
       - name: Build & push Worker image
         env:
           IMAGE: ${{ steps.ecr.outputs.registry }}/${{ env.ECR_WORKER_REPO }}:${{ github.sha }}
-        run: |
-          docker build -t "$IMAGE" -f worker/Dockerfile worker
+        run: | # build image from dockerfile in worker folder and push to ecr
+          docker build -t "$IMAGE" -f worker/Dockerfile .
           docker push "$IMAGE"
           echo "WORKER_IMAGE=$IMAGE" >> "$GITHUB_ENV"
 
       - name: Register new API task definition revision
+        # 1. load current task definition
+        # 2. add new image and delete internal fields which aws re-creates for new image automatically
+        # 3. create new revision and send to aws via cli
         run: |
           TD=$(aws ecs describe-task-definition --task-definition "$ECS_API_TASK_FAMILY" --query taskDefinition)
           NEW=$(echo "$TD" | jq --arg IMAGE "$API_IMAGE" '
             .containerDefinitions |= (map(if .name=="api" then .image=$IMAGE else . end))
-            | del(
+            | del( 
               .taskDefinitionArn,
               .revision,
               .status,
@@ -71,6 +70,7 @@ jobs:
           echo "API_TD_ARN=$ARN" >> "$GITHUB_ENV"
 
       - name: Deploy API service
+        # restart container with new task definition
         run: |
           aws ecs update-service \
             --cluster "$ECS_CLUSTER" \
@@ -79,6 +79,9 @@ jobs:
             --force-new-deployment
 
       - name: Register new Worker task definition revision
+        # 1. load current task definition
+        # 2. add new image and delete internal fields which aws re-creates for new image automatically
+        # 3. create new revision and send to aws via cli
         run: |
           TD=$(aws ecs describe-task-definition --task-definition "$ECS_WORKER_TASK_FAMILY" --query taskDefinition)
           NEW=$(echo "$TD" | jq --arg IMAGE "$WORKER_IMAGE" '
@@ -96,6 +99,7 @@ jobs:
           echo "WORKER_TD_ARN=$ARN" >> "$GITHUB_ENV"
 
       - name: Deploy Worker service
+        # restart container with new task definition
         run: |
           aws ecs update-service \
             --cluster "$ECS_CLUSTER" \

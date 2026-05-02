@@ -7,21 +7,20 @@ resource "aws_ecs_cluster" "main" { # cluster containing api and worker containe
 
 # plan for starting api container 
 resource "aws_ecs_task_definition" "api" {
+
+  # task level config 
   family = "api-task" # task name 
   execution_role_arn = aws_iam_role.ecs_task_execution_role.arn # iam role for ecs to pull images from ecr and to push logs to cloud watch
   network_mode = "awsvpc" # container receives dedicated ip from vpc
   requires_compatibilities = ["FARGATE"] # let aws validate task definition for fargate => when misconfig : throws error before starting
-
   # ressources for container
-  cpu = var.api_fargate_cpu
-  memory = var.api_memory
+  cpu    = var.api_fargate_cpu
+  memory = var.api_fargate_memory
 
-  # container definitions / config from external template file
+  # container level config 
   container_definitions = templatefile("./templates/ecs/api.json.tpl", {
-    api_image          = var.api_image
-    api_fargate_cpu    = var.api_fargate_cpu
-    api_fargate_memory = var.api_memory
-    aws_region         = var.region
+    api_image  = var.api_image
+    aws_region = var.region
     api_port           = var.api_port
     db_user            = var.db_user
     db_name            = var.db_name
@@ -75,10 +74,8 @@ resource "aws_ecs_task_definition" "worker" {
   memory = var.worker_fargate_memory
 
   container_definitions = templatefile("./templates/ecs/worker.json.tpl", {
-    worker_image          = var.worker_image
-    worker_fargate_cpu    = var.worker_fargate_cpu
-    worker_fargate_memory = var.worker_fargate_memory
-    aws_region            = var.region
+    worker_image = var.worker_image
+    aws_region   = var.region
     db_user               = var.db_user
     db_name               = var.db_name
     db_host               = aws_db_instance.postgres.endpoint

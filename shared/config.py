@@ -16,8 +16,8 @@ class Settings(BaseSettings):
     DB_POOL_TTL:int = 60 * 20
     DB_POOL_PRE_PING:bool = True
 
-    GCS_BUCKET_NAME: str
-    GOOGLE_APPLICATION_CREDENTIALS: str
+    S3_BUCKET_NAME: str
+    S3_ENDPOINT_URL: str | None = None
 
     JWT_SECRET: str
     ALGORITHM: str = "HS256"
