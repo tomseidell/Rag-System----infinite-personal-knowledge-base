@@ -2,8 +2,6 @@
   {
     "name": "api",
     "image": "${api_image}",
-    "cpu": ${api_fargate_cpu},
-    "memory": ${api_fargate_memory},
     "logConfiguration": {
       "logDriver": "awslogs",
       "options": {
