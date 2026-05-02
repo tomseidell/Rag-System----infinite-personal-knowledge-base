@@ -19,10 +19,14 @@ services:
         - .env   
       environment:
         - CELERY_BROKER_URL=redis://redis:6379
-        - CELERY_RESULT_BACKEND=redis://redis:6379  
+        - CELERY_RESULT_BACKEND=redis://redis:6379
         - QDRANT_URL=http://vector:6333
         - OLLAMA_HOST=http://host.docker.internal:11434
         - REDIS_URL=redis://redis:6379
+        - S3_BUCKET_NAME=second-brain-dev
+        - S3_ENDPOINT_URL=http://minio:9000
+        - AWS_ACCESS_KEY_ID=minioadmin
+        - AWS_SECRET_ACCESS_KEY=minioadmin
       command: uvicorn api.main:app --host 0.0.0.0 --port 8000 --reload # overrite cmd from dockerfile
     frontend:
       build:
@@ -51,9 +55,13 @@ services:
         - .env                                  
       environment:
         - CELERY_BROKER_URL=redis://redis:6379
-        - CELERY_RESULT_BACKEND=redis://redis:6379  
+        - CELERY_RESULT_BACKEND=redis://redis:6379
         - OLLAMA_HOST=http://host.docker.internal:11434
         - QDRANT_URL=http://vector:6333
+        - S3_BUCKET_NAME=second-brain-dev
+        - S3_ENDPOINT_URL=http://minio:9000
+        - AWS_ACCESS_KEY_ID=minioadmin
+        - AWS_SECRET_ACCESS_KEY=minioadmin
 
       volumes:
       - .:/app
@@ -82,6 +90,28 @@ services:
       volumes:
         - pgadmin_data:/var/lib/pgadmin 
         - ./pgadmin-servers.json:/pgadmin4/servers.json  
+    minio:
+      image: minio/minio
+      ports:
+        - "9000:9000" # api
+        - "9001:9001" # webui
+      environment:
+        MINIO_ROOT_USER: minioadmin
+        MINIO_ROOT_PASSWORD: minioadmin
+      command: server /data --console-address ":9001"
+      volumes:
+        - minio_data:/data
+    minio-init:
+      image: minio/mc
+      depends_on:
+        - minio
+      entrypoint: > # create bucket for initial start in local minio
+        /bin/sh -c "
+        sleep 2;  
+        mc alias set local http://minio:9000 minioadmin minioadmin;
+        mc mb local/second-brain-dev --ignore-existing;
+        exit 0;
+        "
     vector:
       image: "qdrant/qdrant:latest"
       ports:
@@ -107,4 +137,5 @@ volumes:
   pgadmin_data:  
   grafana_data:
   huggingface_cache:
+  minio_data:
                             
