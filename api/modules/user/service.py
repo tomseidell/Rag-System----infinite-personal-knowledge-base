@@ -1,5 +1,5 @@
 from api.modules.user.schemas import TokenResponse, UserLogin, UserRegistration, UserResponse
-from api.modules.user.utils import create_access_token, create_refresh_token, hash_password, verify_password, decode_refresh_token
+from api.modules.user.utils import create_access_token, create_refresh_token, hash_password, verify_password, decode_refresh_token, hash_refresh_token, verify_refresh_token
 from api.modules.user.repository import UserRepository
 from api.modules.user.exceptions import UserNotFoundException, InvalidTokenException, UserAlreadyExistsException, InvalidCredentialsException
 
@@ -35,12 +35,12 @@ class UserService:
         access_token = create_access_token(user.id)
         refresh_token = create_refresh_token(user.id)
 
-        await self.user_repository.update_refresh_token(user.id, refresh_token)
-        
+        await self.user_repository.update_refresh_token(user.id, hash_refresh_token(refresh_token))
+
         return TokenResponse(
-            access_token=access_token, 
-            refresh_token=refresh_token, 
-            token_type="bearer", 
+            access_token=access_token,
+            refresh_token=refresh_token,
+            token_type="bearer",
             expires_in=1800
         )
 
@@ -51,14 +51,16 @@ class UserService:
 
         if not db_user:
             raise UserNotFoundException(identifier=user_id)
-
-        if db_user.refresh_token != refresh_token:
-            raise InvalidTokenException()
         
-        new_access_token = create_access_token(user_id)
+        if not db_user.refresh_token:
+            raise InvalidTokenException()
 
+        if not verify_refresh_token(refresh_token, db_user.refresh_token):
+            raise InvalidTokenException()
+
+        new_access_token = create_access_token(user_id)
         new_refresh_token = create_refresh_token(user_id)
 
-        await self.user_repository.update_refresh_token(user_id, refresh_token)
+        await self.user_repository.update_refresh_token(user_id, hash_refresh_token(new_refresh_token)) # save hashed refresh token
 
         return TokenResponse(access_token=new_access_token, refresh_token=new_refresh_token, expires_in=1800) 
