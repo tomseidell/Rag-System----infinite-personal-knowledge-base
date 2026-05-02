@@ -38,15 +38,16 @@ variable "redis_port"{
 }
 
 
-# app image url, gets dynamically defined in cd pipeline
 variable "api_image" {
-    description = "Docker image URI from ECR"
+  type        = string
+  description = "ECR image URL for the API container"
 }
 
-# worker image url, gets dynamically defined in cd pipeline
 variable "worker_image" {
-    description = "Docker image URI from ECR"
+  type        = string
+  description = "ECR image URL for the worker container"
 }
+
 
 
 variable "api_fargate_cpu" {
