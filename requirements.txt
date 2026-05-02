@@ -36,15 +36,7 @@ filelock==3.25.0
 flatbuffers==25.9.23
 frozenlist==1.8.0
 fsspec==2025.12.0
-gcloud-aio-auth==5.4.2
-gcloud-aio-storage==9.6.1
-google-api-core==2.28.1
-google-auth==2.43.0
-google-cloud-core==2.5.0
-google-cloud-storage==3.5.0
-google-crc32c==1.7.1
-google-resumable-media==2.7.2
-googleapis-common-protos==1.72.0
+aioboto3==15.5.0
 greenlet==3.2.4
 grpcio==1.76.0
 h11==0.16.0
