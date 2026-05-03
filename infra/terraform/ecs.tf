@@ -24,7 +24,7 @@ resource "aws_ecs_task_definition" "api" {
     api_port           = var.api_port
     db_user            = var.db_user
     db_name            = var.db_name
-    db_host            = aws_db_instance.postgres.endpoint
+    db_host            = aws_db_instance.postgres.address
     environment        = var.environment
     db_password_arn    = "${aws_db_instance.postgres.master_user_secret[0].secret_arn}:password::"
     jwt_secret_arn     = "${aws_secretsmanager_secret.main.arn}:JWT_SECRET::"
@@ -32,12 +32,8 @@ resource "aws_ecs_task_definition" "api" {
     qdrant_key_arn     = "${aws_secretsmanager_secret.main.arn}:QDRANT_API_KEY::"
     qdrant_url         = var.qdrant_url
     redis_url          = "redis://${aws_elasticache_cluster.main.cache_nodes[0].address}:${aws_elasticache_cluster.main.port}"
-    s3_bucket_name     = aws_s3_bucket.shared.id
+    s3_bucket_name     = aws_s3_bucket.main.id
   })
-
-  lifecycle {
-    ignore_changes = [container_definitions]
-  }
 }
 
 # manages starting of api container
@@ -81,19 +77,15 @@ resource "aws_ecs_task_definition" "worker" {
     aws_region   = var.region
     db_user               = var.db_user
     db_name               = var.db_name
-    db_host               = aws_db_instance.postgres.endpoint
+    db_host               = aws_db_instance.postgres.address
     environment           = var.environment
     db_password_arn       = "${aws_db_instance.postgres.master_user_secret[0].secret_arn}:password::"
     openai_key_arn        = "${aws_secretsmanager_secret.main.arn}:OPENAI_API_KEY::"
     qdrant_key_arn        = "${aws_secretsmanager_secret.main.arn}:QDRANT_API_KEY::"
     qdrant_url            = var.qdrant_url
     redis_url             = "redis://${aws_elasticache_cluster.main.cache_nodes[0].address}:${aws_elasticache_cluster.main.port}"
-    s3_bucket_name        = aws_s3_bucket.shared.id
+    s3_bucket_name        = aws_s3_bucket.main.id
   })
-
-  lifecycle {
-    ignore_changes = [container_definitions]
-  }
 }
 
 # manages starting of worker container
@@ -128,7 +120,7 @@ resource "aws_ecs_task_definition" "pdf_reader" {
     aws_region      = var.region
     db_user         = var.db_user
     db_name         = var.db_name
-    db_host         = aws_db_instance.postgres.endpoint
+    db_host         = aws_db_instance.postgres.address
     environment     = var.environment
     db_password_arn = "${aws_db_instance.postgres.master_user_secret[0].secret_arn}:password::"
     redis_url       = "redis://${aws_elasticache_cluster.main.cache_nodes[0].address}:${aws_elasticache_cluster.main.port}"
@@ -146,9 +138,5 @@ resource "aws_ecs_service" "pdf_reader" {
     security_groups  = [aws_security_group.worker.id]
     subnets          = aws_subnet.private.*.id
     assign_public_ip = false
-  }
-
-  lifecycle {
-    ignore_changes = [container_definitions]
   }
 }
