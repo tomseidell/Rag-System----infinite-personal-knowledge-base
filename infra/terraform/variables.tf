@@ -25,18 +25,6 @@ variable "redis_port"{
 }
 
 
-variable "api_image" {
-  type        = string
-  description = "ECR image URL for the API container"
-}
-
-variable "worker_image" {
-  type        = string
-  description = "ECR image URL for the worker container"
-}
-
-
-
 variable "api_fargate_cpu" {
   description = "vCPU units for the API container (HTTP server, DB queries only)"
   default     = "512"
@@ -65,6 +53,20 @@ variable "api_count" {
 variable "worker_count" {
   description = "numer of instances"
   default = 2
+}
+
+variable "pdf_reader_fargate_cpu" {
+  description = "vCPU units for the pdf-reader worker (text extraction only, no ML model)"
+  default     = "256"
+}
+variable "pdf_reader_fargate_memory" {
+  description = "Memory in MB for the pdf-reader worker"
+  default     = "512"
+}
+
+variable "pdf_reader_count" {
+  description = "number of pdf-reader worker instances"
+  default     = 1
 }
 
 variable "project_name"{
