@@ -1,14 +1,9 @@
 import pytest
-from unittest.mock import patch, AsyncMock, ANY, MagicMock
+from unittest.mock import AsyncMock, MagicMock
 from api.modules.document.repository import DocumentRepository
-from shared.core.exceptions import InputError, NotFoundException, DatabaseException
-from shared.modules.document.model import Document
-from datetime import datetime
-from api.modules.document.schemas import DocumentContentResponse, DocumentResponse, DocumentCreate
-from api.clients.qdrant.exceptions import QdrantException
-from api.clients.storage.exceptions import StorageException
+from shared.core.exceptions import DatabaseException
+from api.modules.document.schemas import DocumentCreate
 from sqlalchemy.exc import SQLAlchemyError
-from api.modules.document.exceptions import DocumentNotFoundException
 
 
 
@@ -57,7 +52,7 @@ async def test_create_document(repository, mocked_document_input):
 
     repository.db.add = MagicMock() 
 
-    result = await repository.create_document(data=mocked_document_input)
+    await repository.create_document(data=mocked_document_input)
 
 
     repository.db.rollback.assert_not_called()

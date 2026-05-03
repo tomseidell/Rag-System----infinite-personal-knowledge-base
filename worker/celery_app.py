@@ -4,9 +4,6 @@ from celery import Celery
 from celery.signals import worker_process_init
 from functools import lru_cache
 
-from shared.modules.chunk.model import Chunk
-from shared.modules.document.model import Document
-from shared.modules.user.model import User
 
 from worker.clients.qdrant_service import QdrantService
 
@@ -43,5 +40,3 @@ def init_models(**kwargs):
         get_qdrant_service()
 
 
-from worker.tasks.process_document import embed_document
-from worker.tasks.read_pdf import read_pdf

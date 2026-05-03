@@ -17,7 +17,6 @@ from worker.clients.llm.dependency import get_llm_service
 from worker.chunk.chunk_repository import ChunkRepositorySync
 from worker.chunk.chunk_service import ChunkServiceSync
 from worker.document.document_repository import DocumentRepositorySync
-from worker.document.document_service import DocumentService
 
 logger = logging.getLogger(__name__)
 
@@ -50,7 +49,6 @@ def embed_document(
     chunk_repo = ChunkRepositorySync(db=db)
     chunk_service = ChunkServiceSync(repo=chunk_repo)
     document_repo = DocumentRepositorySync(db=db)
-    document_service = DocumentService(repository=document_repo)
 
     # global vars
     storage_path = None
