@@ -4,21 +4,16 @@ from celery import Celery
 from celery.signals import worker_process_init
 from functools import lru_cache
 
-
-# import database models
 from shared.modules.chunk.model import Chunk
 from shared.modules.document.model import Document
 from shared.modules.user.model import User
-
-
-
 
 from worker.clients.qdrant_service import QdrantService
 
 celery_app = Celery(
     "worker",
-    broker=os.getenv("CELERY_BROKER_URL", "redis://localhost:6379"), # where to push tasks
-    backend=os.getenv("CELERY_RESULT_BACKEND", "redis://localhost:6379"), # where to save tasks
+    broker=os.getenv("CELERY_BROKER_URL", "redis://localhost:6379"),
+    backend=os.getenv("CELERY_RESULT_BACKEND", "redis://localhost:6379"),
 )
 celery_app.conf.update(
     task_serializer="json",
@@ -26,25 +21,27 @@ celery_app.conf.update(
     accept_content=["json"],
     task_acks_late=True,
     worker_prefetch_multiplier=1,
-    task_routes={ 
-        "process_document": {"queue": "documents"}, # if called funcion is in relative path to key, task should go to documents queue
-    }
+    task_routes={
+        "read_pdf": {"queue": "pdf_read"}, # worker 1 listening on pdf read
+        "embed_document": {"queue": "embed"}, # worker 2 listening on embed
+    },
 )
 
-celery_app.autodiscover_tasks(['worker.tasks']) # let celery automatically register all tasks in given path
+celery_app.autodiscover_tasks(["worker.tasks"]) # search for tasks in directory
 
 
-# cache qdrant_service instance in get_qdrant_service function 
 @lru_cache()
 def get_qdrant_service():
     print("loading Sparse embedding model")
-    qdrant_service = QdrantService()
-    return qdrant_service
-    
-# immediately after initializing celery worker, call get_qdrant_service
+    return QdrantService()
+
+
+# only load the heavy Qdrant/embedding model on the embedder worker
 @worker_process_init.connect
 def init_models(**kwargs):
-    get_qdrant_service()
+    if os.getenv("WORKER_TYPE") == "embedder":
+        get_qdrant_service()
 
 
-from worker.tasks.process_document import process_document
+from worker.tasks.process_document import embed_document
+from worker.tasks.read_pdf import read_pdf
