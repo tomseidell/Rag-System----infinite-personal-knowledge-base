@@ -1,4 +1,4 @@
-resource "aws_ecs_cluster" "main" { # cluster containing api and worker container
+resource "aws_ecs_cluster" "main" { # cluster containing api, worker, and pdf-reader containers
   name = "main-cluster"
 }
 
@@ -19,7 +19,7 @@ resource "aws_ecs_task_definition" "api" {
 
   # container level config 
   container_definitions = templatefile("./templates/ecs/api.json.tpl", {
-    api_image  = var.api_image
+    api_image  = "${aws_ecr_repository.api.repository_url}:latest"
     aws_region = var.region
     api_port           = var.api_port
     db_user            = var.db_user
@@ -33,8 +33,11 @@ resource "aws_ecs_task_definition" "api" {
     qdrant_url         = var.qdrant_url
     redis_url          = "redis://${aws_elasticache_cluster.main.cache_nodes[0].address}:${aws_elasticache_cluster.main.port}"
     s3_bucket_name     = aws_s3_bucket.shared.id
-
   })
+
+  lifecycle {
+    ignore_changes = [container_definitions]
+  }
 }
 
 # manages starting of api container
@@ -74,7 +77,7 @@ resource "aws_ecs_task_definition" "worker" {
   memory = var.worker_fargate_memory
 
   container_definitions = templatefile("./templates/ecs/worker.json.tpl", {
-    worker_image = var.worker_image
+    worker_image = "${aws_ecr_repository.worker.repository_url}:latest"
     aws_region   = var.region
     db_user               = var.db_user
     db_name               = var.db_name
@@ -86,8 +89,11 @@ resource "aws_ecs_task_definition" "worker" {
     qdrant_url            = var.qdrant_url
     redis_url             = "redis://${aws_elasticache_cluster.main.cache_nodes[0].address}:${aws_elasticache_cluster.main.port}"
     s3_bucket_name        = aws_s3_bucket.shared.id
-
   })
+
+  lifecycle {
+    ignore_changes = [container_definitions]
+  }
 }
 
 # manages starting of worker container
@@ -98,9 +104,51 @@ resource "aws_ecs_service" "worker" {
   desired_count = var.enable_services? var.worker_count  : 0
   launch_type = "FARGATE"
 
-  network_configuration { 
+  network_configuration {
     security_groups = [aws_security_group.worker.id]
     subnets = aws_subnet.private.*.id
     assign_public_ip = false
+  }
+}
+
+
+# pdf-reader worker 
+
+resource "aws_ecs_task_definition" "pdf_reader" {
+  family                   = "pdf-reader-task"
+  execution_role_arn       = aws_iam_role.ecs_task_execution_role.arn
+  network_mode             = "awsvpc"
+  requires_compatibilities = ["FARGATE"]
+
+  cpu    = var.pdf_reader_fargate_cpu
+  memory = var.pdf_reader_fargate_memory
+
+  container_definitions = templatefile("./templates/ecs/pdf_reader.json.tpl", {
+    worker_image    = "${aws_ecr_repository.worker.repository_url}:latest"
+    aws_region      = var.region
+    db_user         = var.db_user
+    db_name         = var.db_name
+    db_host         = aws_db_instance.postgres.endpoint
+    environment     = var.environment
+    db_password_arn = "${aws_db_instance.postgres.master_user_secret[0].secret_arn}:password::"
+    redis_url       = "redis://${aws_elasticache_cluster.main.cache_nodes[0].address}:${aws_elasticache_cluster.main.port}"
+  })
+}
+
+resource "aws_ecs_service" "pdf_reader" {
+  name            = "pdf-reader-service"
+  cluster         = aws_ecs_cluster.main.id
+  task_definition = aws_ecs_task_definition.pdf_reader.arn
+  desired_count   = var.enable_services ? var.pdf_reader_count : 0
+  launch_type     = "FARGATE"
+
+  network_configuration {
+    security_groups  = [aws_security_group.worker.id]
+    subnets          = aws_subnet.private.*.id
+    assign_public_ip = false
+  }
+
+  lifecycle {
+    ignore_changes = [container_definitions]
   }
 }

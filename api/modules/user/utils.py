@@ -1,5 +1,6 @@
 import bcrypt
-from datetime import datetime, timedelta, timezone 
+import hashlib
+from datetime import datetime, timedelta, timezone
 from fastapi import HTTPException
 import jwt
 from shared.config import settings
@@ -71,6 +72,14 @@ def decode_access_token(token:str) -> int:
         return payload["user_id"] 
     except jwt.InvalidTokenError:
         raise HTTPException(status_code=401, detail="Invalid token")
+
+
+def hash_refresh_token(token: str) -> str:
+    return hashlib.sha256(token.encode()).hexdigest()
+
+
+def verify_refresh_token(token: str, token_hash: str) -> bool:
+    return hashlib.sha256(token.encode()).hexdigest() == token_hash
 
 
 def decode_refresh_token(token:str) ->int:

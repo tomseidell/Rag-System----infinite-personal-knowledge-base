@@ -6,7 +6,6 @@ from pydantic import BaseModel, ConfigDict
 class DocumentResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: int
-    user_id: int
     title: str
     original_filename: str
     file_size: int
@@ -23,9 +22,6 @@ class DocumentContentResponse(BaseModel):
     file_size: int
     file_type: str
 
-
-class DocumentUploadResponse(DocumentResponse):
-    task_id: str | None = None
 
 
 class DocumentCreate(BaseModel):

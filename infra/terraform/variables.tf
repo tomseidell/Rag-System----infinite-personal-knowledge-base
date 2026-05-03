@@ -20,25 +20,9 @@ variable "az_count" {
 }
 
 
-variable "worker_port"{
-    description = "port where fargate worker instance will run"
-}
-
 variable "redis_port"{
     description = "port where redis / elasticache will run"
 }
-
-
-variable "api_image" {
-  type        = string
-  description = "ECR image URL for the API container"
-}
-
-variable "worker_image" {
-  type        = string
-  description = "ECR image URL for the worker container"
-}
-
 
 
 variable "api_fargate_cpu" {
@@ -71,6 +55,20 @@ variable "worker_count" {
   default = 2
 }
 
+variable "pdf_reader_fargate_cpu" {
+  description = "vCPU units for the pdf-reader worker (text extraction only, no ML model)"
+  default     = "256"
+}
+variable "pdf_reader_fargate_memory" {
+  description = "Memory in MB for the pdf-reader worker"
+  default     = "512"
+}
+
+variable "pdf_reader_count" {
+  description = "number of pdf-reader worker instances"
+  default     = 1
+}
+
 variable "project_name"{
   default = "second-brain"
 }
@@ -91,10 +89,12 @@ variable "db_name"{
 
 variable "openai_api_key" {
   description = "api key of openai"
+  sensitive   = true
 }
 
 variable "qdrant_api_key" {
   description = "api key of qdrant"
+  sensitive   = true
 }
 
 variable "environment" {

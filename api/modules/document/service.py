@@ -2,11 +2,10 @@ import uuid
 from fastapi import UploadFile
 from api.modules.document.repository import DocumentRepository
 import hashlib
-from api.modules.document.schemas import DocumentCreate, PaginatedDocuments, DocumentUploadResponse, DocumentContentResponse, DocumentResponse
+from api.modules.document.schemas import DocumentCreate, PaginatedDocuments, DocumentContentResponse, DocumentResponse
 from pathlib import Path
 import asyncio
 from sqlalchemy.ext.asyncio import AsyncSession
-from celery.result import AsyncResult
 
 from api.clients.storage.exceptions import StorageException
 
@@ -68,7 +67,7 @@ class DocumentService:
         return encoded_bytes.decode("utf-8") # create string
 
 
-    async def upload_document(self, user_id: int, title: str| None, file:UploadFile) -> DocumentUploadResponse:
+    async def upload_document(self, user_id: int, title: str| None, file:UploadFile) -> DocumentResponse:
         content = await file.read()#bytes, runs in separate threadpool
         if len(content) >= 10 * 1024 * 1024: #10mb max
             raise InputError(
@@ -101,7 +100,7 @@ class DocumentService:
         existing = await self.document_repository.check_for_existing_hash(user_id=user_id, content_hash=content_hash)
 
         if existing: #do not save document if already existing 
-            return DocumentUploadResponse.model_validate(existing) 
+            return DocumentResponse.model_validate(existing) 
 
         if not title: # if no title provided, create title automatically based on filename
             title = self._create_title_from_file(filename=file.filename)
@@ -121,21 +120,15 @@ class DocumentService:
         # change binary image format to base64
         encoded_content = await asyncio.to_thread(self._encode_content_base64, content)
 
-        # call celery worker task
-        result:AsyncResult = await asyncio.to_thread(
+        # call pdf reader worker
+        await asyncio.to_thread(
             celery_app.send_task,
-            "process_document",
-            args=[encoded_content, db_document.id, user_id, name, content_type]
+            "read_pdf",
+            args=[encoded_content, db_document.id, user_id, name, content_type],
+            queue="pdf_read",
         )
 
-        task_id = result.task_id
-
-        print("task Id: ",task_id)
-
-        response = DocumentUploadResponse.model_validate(db_document)
-        response.task_id = task_id
-
-        return response
+        return DocumentResponse.model_validate(db_document)
 
 
     async def get_document(self, user_id:int, document_id:int) -> DocumentContentResponse:

@@ -16,3 +16,12 @@ resource "aws_cloudwatch_log_stream" "worker_log_stream" {
     name = "worker-log-stream"
     log_group_name = aws_cloudwatch_log_group.worker_log_group.name
 }
+
+resource "aws_cloudwatch_log_group" "pdf_reader_log_group" {
+    name = "/ecs/pdf-reader"
+    retention_in_days = 5
+}
+resource "aws_cloudwatch_log_stream" "pdf_reader_log_stream" {
+    name = "pdf-reader-log-stream"
+    log_group_name = aws_cloudwatch_log_group.pdf_reader_log_group.name
+}

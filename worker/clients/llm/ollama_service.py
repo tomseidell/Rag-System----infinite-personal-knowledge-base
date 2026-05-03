@@ -23,7 +23,6 @@ class OllamaService:
         max_retries_per_batch: int = 2,
     ) -> list[list[float]]:
         all_embeddings = []
-        skipped_indices = []
         logger.info(f"Total chunks: {len(chunks)}, batch_size: {batch_size}")
 
         for i in range(0, len(chunks), batch_size):
