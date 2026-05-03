@@ -2,6 +2,7 @@ import base64
 import gc
 import logging
 import re
+import unicodedata
 import pymupdf
 from worker.document.document_repository import DocumentRepositorySync
 from worker.document.exceptions import PDFProcessingException, TextSplittingException
@@ -16,16 +17,16 @@ class DocumentService:
     def __init__(self, repository:DocumentRepositorySync):
         self.repository = repository
 
-    def extract_text_from_pdf(self, content: bytes) -> str:
+    def extract_text_from_pdf(self, content: str) -> str:
         doc = None
         try:
-            content_bytes = base64.b64decode(content)
+            content_bytes = base64.b64decode(content, validate=True)
             doc = pymupdf.open(stream=content_bytes, filetype="pdf")
             pages = []
 
             for page_num in range(len(doc)):
                 try:
-                    page = doc[page_num]
+                    page = doc.load_page(page_num)
                     page_string = str(page.get_text())
                     page_string = page_string.replace("\x00", "")
                     page_string = page_string.replace("\ufffd", "")
@@ -41,6 +42,12 @@ class DocumentService:
                     continue
 
             content_str = "\n\n".join(pages)
+            content_str = unicodedata.normalize("NFKC", content_str)
+            content_str = re.sub("[\u200E\u200F\u202A-\u202E\u2066-\u2069]", "", content_str)
+
+            if len(content_str) > 5_000_000:
+                raise PDFProcessingException(detail="Extracted text exceeds size limit")
+
             logger.info(f"Extracted text length: {len(content_str)}")
             return content_str
 
