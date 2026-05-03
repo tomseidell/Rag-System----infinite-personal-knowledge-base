@@ -1,3 +1,4 @@
+import base64
 import gc
 import logging
 
@@ -6,166 +7,150 @@ from celery.exceptions import SoftTimeLimitExceeded
 
 from shared.database import SyncSessionLocal
 from shared.modules.chunk.model import Chunk
+from shared.core.exceptions import OllamaException, QdrantException, StorageException, OpenaiException
 
 from worker.celery_app import celery_app
-
+from worker.clients.redis_service import RedisService
+from worker.clients.storage_service import StorageService
+from worker.clients.qdrant_service import QdrantService
+from worker.clients.llm.dependency import get_llm_service
 from worker.chunk.chunk_repository import ChunkRepositorySync
 from worker.chunk.chunk_service import ChunkServiceSync
-
 from worker.document.document_repository import DocumentRepositorySync
 from worker.document.document_service import DocumentService
 
-from shared.core.exceptions import OllamaException, QdrantException, StorageException, OpenaiException
-from worker.clients.storage_service import StorageService
-from worker.clients.qdrant_service import QdrantService
-from worker.clients.llm.ollama_service import OllamaService
-
-from worker.clients.llm.dependency import get_llm_service
-
 logger = logging.getLogger(__name__)
-
-print("load task")
 
 
 @celery_app.task(
-    name="process_document",
-    autoretry_for=(OllamaException, QdrantException, StorageException), # if exception occurs, celery re- adds task to redis to perform retry
+    name="embed_document",
+    autoretry_for=(OllamaException, QdrantException, StorageException),
     max_retries=3,
     bind=True,
-    soft_time_limit=300, # retry logic
-    time_limit= 350, # mark task as failed
-    retry_backoff = True # increase time between retries exponentially 
+    soft_time_limit=300,
+    time_limit=350,
+    retry_backoff=True,
 )
-def process_document(self: Task, content: bytes, document_id: int, user_id: int, filename: str, content_type: str):
-    db = SyncSessionLocal() # create new Database Session
+def embed_document(
+    self: Task,
+    encoded_content: str,
+    document_id: int,
+    user_id: int,
+    filename: str,
+    content_type: str,
+    chunks: list[str],
+):
+    
+    # dependencies:
+    db = SyncSessionLocal()
     storage_service = StorageService()
     qdrant_service = QdrantService()
     llm_service = get_llm_service()
+    redis_service = RedisService()
     chunk_repo = ChunkRepositorySync(db=db)
     chunk_service = ChunkServiceSync(repo=chunk_repo)
     document_repo = DocumentRepositorySync(db=db)
     document_service = DocumentService(repository=document_repo)
-    document_service.log_memory("After Services Init")
 
+    # global vars
     storage_path = None
     chunk_ids = []
 
     try:
-        logger.info(f"Processing document {document_id} ({filename})")
-        document_service.log_memory(f"Content received ({len(content)} bytes)")
+        logger.info(f"Embedder started for document {document_id} ({len(chunks)} chunks)")
+        redis_service.set_status(document_id, "embedding", "Embedding document")
 
-        text = document_service.extract_text_from_pdf(content=content)
-        document_service.log_memory(f"After Text Extraction ({len(text)} chars)")
-
-        chunks = document_service.split_text(text)
-        document_service.log_memory(f"After Chunking ({len(chunks)} chunks)")
-
-        # remove variable to keep ram efficient 
-        del text
-        gc.collect()
-        document_service.log_memory("After Text Cleanup")
-
-        # flush chunks to database
         chunk_objects: list[Chunk] = chunk_service.create_chunks_from_text(
-            chunks=chunks, 
-            user_id=user_id, 
-            document_id=document_id
+            chunks=chunks,
+            user_id=user_id,
+            document_id=document_id,
         )
-        
-        # create dense embeddings 
+
         dense_embeddings = llm_service.embed_text(chunks=chunks)
-        document_service.log_memory(f"After Dense Embeddings ({len(dense_embeddings)} vectors)")
 
-        # create sparse embeddings
         sparse_embeddings = qdrant_service.create_sparse_embedding(chunks)
-        document_service.log_memory(f"After Sparse Embeddings ({len(dense_embeddings)} vectors)")
 
-        # safe chunks to vector db
-        qdrant_insert_result = qdrant_service.insert_chunks(chunk_objects=chunk_objects, dense_embeddings=dense_embeddings, sparse_embeddings=sparse_embeddings )
+        qdrant_insert_result = qdrant_service.insert_chunks(
+            chunk_objects=chunk_objects,
+            dense_embeddings=dense_embeddings,
+            sparse_embeddings=sparse_embeddings,
+        )
 
+        # clean ram of worker
         del chunks, sparse_embeddings, dense_embeddings, chunk_objects
         gc.collect()
-        document_service.log_memory("After Cleanup")
 
         chunk_ids = qdrant_insert_result.chunk_ids
-        
-        # upload file to gcp bucket 
+
+
+        # upload to bucket
         storage_path = storage_service.upload_file(
-            content=content,
+            content=base64.b64decode(encoded_content),
             filename=filename,
             user_id=user_id,
-            content_type=content_type
+            content_type=content_type,
         )
-        document_service.log_memory("After Storage Upload")
-        
-        # delete the bytes 
-        del content
-        gc.collect()
-        document_service.log_memory("After Content Cleanup")
-        
-        # mark document as finished in db documents table 
-        document_repo.finish_document(
-            document_id=document_id, 
-            user_id=user_id, 
-            storage_path=storage_path, 
-            chunk_count=len(chunk_ids)
-        )
-        document_service.log_memory("After DB Update")
-        
-        logger.info(f"Document {document_id} processed successfully!")
-        document_service.log_memory("Task Success")
 
-    # retry for 3 error types
+        del encoded_content
+        gc.collect()
+
+        # save completed document to db
+        document_repo.finish_document(
+            document_id=document_id,
+            user_id=user_id,
+            storage_path=storage_path,
+            chunk_count=len(chunk_ids),
+        )
+
+        redis_service.set_status(document_id, "completed", "Document processed")
+        logger.info(f"Document {document_id} processed successfully")
+
     except (OllamaException, QdrantException, StorageException, OpenaiException) as e:
-        logger.error(f"Service exception: {e}")
+        logger.error(f"Service exception for document {document_id}: {e}")
+        redis_service.set_status(document_id, "failed", str(e))
         db.rollback()
-        
         if chunk_ids:
             qdrant_service.delete_many_chunks(chunkIds=chunk_ids)
         if storage_path:
             storage_service.delete_file(storage_path)
         if self.request.retries == self.max_retries:
             document_repo.mark_status_failed(
-                document_id=document_id, 
-                user_id=user_id, 
-                error_message="Saving document failed, please try again later"
+                document_id=document_id,
+                user_id=user_id,
+                error_message="Processing failed, please try again later",
             )
         raise
 
-    # mark task as failed when having too many retries
     except SoftTimeLimitExceeded:
-        logger.error("Task timeout!")
+        logger.error(f"Embedder timed out for document {document_id}")
+        redis_service.set_status(document_id, "failed", "Timeout during embedding")
         db.rollback()
         if chunk_ids:
             qdrant_service.delete_many_chunks(chunkIds=chunk_ids)
         if storage_path:
             storage_service.delete_file(storage_path)
         document_repo.mark_status_failed(
-            document_id=document_id, 
-            user_id=user_id, 
-            error_message="Timeout in operation"
+            document_id=document_id,
+            user_id=user_id,
+            error_message="Timeout during processing",
         )
         raise
 
-    # when unexcpected error occurs, stop and rollback
     except Exception as e:
-        logger.error(f"Unexpected exception: {e}", exc_info=True)
+        logger.error(f"Unexpected error for document {document_id}: {e}", exc_info=True)
+        redis_service.set_status(document_id, "failed", "Unexpected error")
         db.rollback()
         if chunk_ids:
             qdrant_service.delete_many_chunks(chunkIds=chunk_ids)
         if storage_path:
             storage_service.delete_file(storage_path)
         document_repo.mark_status_failed(
-            document_id=document_id, 
-            user_id=user_id, 
-            error_message="Saving document failed, please try again later"
+            document_id=document_id,
+            user_id=user_id,
+            error_message="Unexpected error during processing",
         )
         raise
-    
+
     finally:
         db.close()
         gc.collect()
-        document_service.log_memory("Task End")
-
-
-
