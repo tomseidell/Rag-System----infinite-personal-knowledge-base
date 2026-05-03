@@ -4,7 +4,7 @@ from api.modules.document.repository import DocumentRepository
 from shared.core.exceptions import InputError, NotFoundException, DatabaseException
 from shared.modules.document.model import Document
 from datetime import datetime
-from api.modules.document.schemas import DocumentContentResponse, DocumentUploadResponse, DocumentCreate
+from api.modules.document.schemas import DocumentContentResponse, DocumentResponse, DocumentCreate
 from api.clients.qdrant.exceptions import QdrantException
 from api.clients.storage.exceptions import StorageException
 from sqlalchemy.exc import SQLAlchemyError

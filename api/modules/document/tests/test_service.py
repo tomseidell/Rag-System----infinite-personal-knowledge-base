@@ -4,7 +4,7 @@ from api.modules.document.service import DocumentService
 from shared.core.exceptions import InputError, NotFoundException, DatabaseException
 from shared.modules.document.model import Document
 from datetime import datetime
-from api.modules.document.schemas import DocumentContentResponse, DocumentUploadResponse
+from api.modules.document.schemas import DocumentContentResponse, DocumentResponse
 from api.clients.qdrant.exceptions import QdrantException
 from api.clients.storage.exceptions import StorageException
 from sqlalchemy.exc import SQLAlchemyError
@@ -128,7 +128,7 @@ async def test_upload_document_with_existing_hash(service, mocked_existing_docum
 
     result = await service.upload_document(user_id=2, file=mocked_file, title="test")
 
-    assert isinstance(result, DocumentUploadResponse) # response should be of type
+    assert isinstance(result, DocumentResponse) # response should be of type
     assert result.id == mocked_existing_document.id
 
     # check for correct hash generation
@@ -165,7 +165,7 @@ async def test_upload_document(service, mocked_existing_document):
     
         result = await service.upload_document(user_id=2, file=mocked_file, title="test")
 
-        assert isinstance(result, DocumentUploadResponse)
+        assert isinstance(result, DocumentResponse)
         assert result.id == mocked_existing_document.id
         assert result.task_id == "mocked-task-id"
 
