@@ -22,7 +22,7 @@ jobs:
       ECS_PDF_READER_TASK_FAMILY: pdf-reader-task
 
     steps:
-      - uses: actions/checkout@v4 # clone local code to vm
+      - uses: actions/checkout@v6 # clone local code to vm
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4 # use aws action to login to aws cli
