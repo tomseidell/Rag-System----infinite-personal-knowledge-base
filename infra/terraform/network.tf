@@ -13,8 +13,11 @@ resource "aws_subnet" "private" {
   vpc_id = aws_vpc.main.id
   cidr_block = cidrsubnet(aws_vpc.main.cidr_block, 8, count.index)
 
-  # based on count, choose az from above 
   availability_zone = data.aws_availability_zones.available.names[count.index]
+
+  tags = {
+    Name = "private-${count.index}"
+  }
 }
 resource "aws_subnet" "public" {
   count = var.az_count

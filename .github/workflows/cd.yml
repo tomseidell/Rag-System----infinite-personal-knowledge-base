@@ -37,18 +37,22 @@ jobs:
 
       - name: Build & push API image
         env:
-          IMAGE: ${{ steps.ecr.outputs.registry }}/${{ env.ECR_API_REPO }}:${{ github.sha }} # github.sha => unique hash id for commit
-        run: | # build image from dockerfile in api folder and push to ecr
-          docker build -t "$IMAGE" -f api/Dockerfile . 
+          IMAGE: ${{ steps.ecr.outputs.registry }}/${{ env.ECR_API_REPO }}:${{ github.sha }}
+          IMAGE_LATEST: ${{ steps.ecr.outputs.registry }}/${{ env.ECR_API_REPO }}:latest
+        run: |
+          docker build -t "$IMAGE" -t "$IMAGE_LATEST" -f api/Dockerfile .
           docker push "$IMAGE"
+          docker push "$IMAGE_LATEST"
           echo "API_IMAGE=$IMAGE" >> "$GITHUB_ENV"
 
       - name: Build & push Worker image
         env:
           IMAGE: ${{ steps.ecr.outputs.registry }}/${{ env.ECR_WORKER_REPO }}:${{ github.sha }}
-        run: | # build image from dockerfile in worker folder and push to ecr
-          docker build -t "$IMAGE" -f worker/Dockerfile .
+          IMAGE_LATEST: ${{ steps.ecr.outputs.registry }}/${{ env.ECR_WORKER_REPO }}:latest
+        run: |
+          docker build -t "$IMAGE" -t "$IMAGE_LATEST" -f worker/Dockerfile .
           docker push "$IMAGE"
+          docker push "$IMAGE_LATEST"
           echo "WORKER_IMAGE=$IMAGE" >> "$GITHUB_ENV"
 
       - name: Register new API task definition revision

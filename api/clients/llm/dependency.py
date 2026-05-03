@@ -10,7 +10,4 @@ def get_llm_service()-> BaseLLMService:
 
     if environment == "development":
         return OllamaServiceAsync()
-    elif environment == "production":
-        return OpenaiService()
-    else:
-        raise ValueError("Wrong or Missing environment variable: ENVIRONMENT")
+    return OpenaiService()

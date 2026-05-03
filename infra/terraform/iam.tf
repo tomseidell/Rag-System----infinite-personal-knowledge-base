@@ -12,8 +12,8 @@ resource "aws_iam_policy" "s3_access" {
         "s3:ListBucket"
       ]
       Resource = [
-        aws_s3_bucket.shared.arn,          # für ListBucket
-        "${aws_s3_bucket.shared.arn}/*"    # für Get/Put/Delete auf Objekte
+        aws_s3_bucket.main.arn,          # für ListBucket
+        "${aws_s3_bucket.main.arn}/*"    # für Get/Put/Delete auf Objekte
       ]
     }]
   })
