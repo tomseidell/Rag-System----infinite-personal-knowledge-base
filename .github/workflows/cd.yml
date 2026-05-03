@@ -15,9 +15,11 @@ jobs:
       ECS_CLUSTER: main-cluster
       ECS_API_SERVICE: api-service
       ECS_WORKER_SERVICE: worker-service
+      ECS_PDF_READER_SERVICE: pdf-reader-service
 
       ECS_API_TASK_FAMILY: api-task
       ECS_WORKER_TASK_FAMILY: worker-task
+      ECS_PDF_READER_TASK_FAMILY: pdf-reader-task
 
     steps:
       - uses: actions/checkout@v4 # clone local code to vm
@@ -105,4 +107,30 @@ jobs:
             --cluster "$ECS_CLUSTER" \
             --service "$ECS_WORKER_SERVICE" \
             --task-definition "$WORKER_TD_ARN" \
+            --force-new-deployment
+
+      - name: Register new pdf-reader task definition revision
+        # pdf-reader uses the same worker image — only update the image reference
+        run: |
+          TD=$(aws ecs describe-task-definition --task-definition "$ECS_PDF_READER_TASK_FAMILY" --query taskDefinition)
+          NEW=$(echo "$TD" | jq --arg IMAGE "$WORKER_IMAGE" '
+            .containerDefinitions |= (map(if .name=="pdf-reader" then .image=$IMAGE else . end))
+            | del(
+              .taskDefinitionArn,
+              .revision,
+              .status,
+              .requiresAttributes,
+              .compatibilities,
+              .registeredAt,
+              .registeredBy
+            )')
+          ARN=$(aws ecs register-task-definition --cli-input-json "$NEW" --query taskDefinition.taskDefinitionArn --output text)
+          echo "PDF_READER_TD_ARN=$ARN" >> "$GITHUB_ENV"
+
+      - name: Deploy pdf-reader service
+        run: |
+          aws ecs update-service \
+            --cluster "$ECS_CLUSTER" \
+            --service "$ECS_PDF_READER_SERVICE" \
+            --task-definition "$PDF_READER_TD_ARN" \
             --force-new-deployment
