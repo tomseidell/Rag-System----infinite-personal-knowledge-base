@@ -1,4 +1,3 @@
-import gc
 import logging
 
 from celery import Task
@@ -89,4 +88,3 @@ def read_pdf(
 
     finally:
         db.close()
-        gc.collect()
