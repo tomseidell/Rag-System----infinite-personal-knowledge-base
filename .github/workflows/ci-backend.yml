@@ -4,13 +4,10 @@ name: CI
 on:
   push:
     branches:
-      - "dev/backend"
-      - "dev/backend/**"
+      - main
   pull_request:
     branches:
       - main
-    paths: # only run when code in api folder changed
-      - "api/**"
 
 jobs:
   lint: # check on syntax, imports and formatting
@@ -21,11 +18,10 @@ jobs:
         with:
           python-version: "3.12"
       - run: pip install ruff
-      - run: ruff check api/ shared/
+      - run: ruff check api/ shared/ infra/ worker/
 
   test:
     runs-on: ubuntu-latest
-    needs: lint        # only runs when lint passes
     env: ## add env vars
       ENVIRONMENT: ${{ secrets.ENVIRONMENT }}
       DATABASE_USER: ${{ secrets.DATABASE_USER }}
@@ -46,10 +42,8 @@ jobs:
           pip install -r requirements-dev.txt
       - run: pytest -v --cov=api
 
-
   security: # check for secure dependencies
     runs-on: ubuntu-latest
-    needs: lint 
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
