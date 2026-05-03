@@ -11,7 +11,7 @@ router = APIRouter()
 
 UserServiceDep = Annotated[UserService, Depends(get_user_service)]
 
-_COOKIE_SECURE = settings.ENVIRONMENT == "production"
+_COOKIE_SECURE = settings.COOKIE_SECURE
 
 
 def _set_auth_cookies(response: Response, access_token: str, refresh_token: str) -> None:

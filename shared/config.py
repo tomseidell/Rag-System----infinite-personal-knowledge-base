@@ -19,7 +19,9 @@ class Settings(BaseSettings):
     S3_BUCKET_NAME: str
     S3_ENDPOINT_URL: str | None = None
 
-    FRONTEND_URL: str = "http://localhost:5173" 
+    COOKIE_SECURE: bool = False
+
+    FRONTEND_URL: str = "http://localhost:5173"
 
     JWT_SECRET: str
     ALGORITHM: str = "HS256"
