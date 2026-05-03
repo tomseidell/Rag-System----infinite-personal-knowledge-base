@@ -13,7 +13,10 @@ logger = logging.getLogger(__name__)
 class AsyncQdrantService:
     def __init__(self):
         # init connection to Qdrant
-        self.client = AsyncQdrantClient(url=os.getenv("QDRANT_URL", "http://localhost:6333"))  
+        self.client = AsyncQdrantClient(
+            url=os.getenv("QDRANT_URL", "http://localhost:6333"),
+            api_key=os.getenv("QDRANT_API_KEY"),
+        )
         # initialize embedding modell 
         self.sparse_model = SparseTextEmbedding(model_name="prithivida/Splade_PP_en_v1")
 
