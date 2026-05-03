@@ -16,14 +16,14 @@ class Settings(BaseSettings):
     DB_POOL_TTL:int = 60 * 20
     DB_POOL_PRE_PING:bool = True
 
-    S3_BUCKET_NAME: str
+    S3_BUCKET_NAME: str = ""
     S3_ENDPOINT_URL: str | None = None
 
     COOKIE_SECURE: bool = False
 
     FRONTEND_URL: str = "http://localhost:5173"
 
-    JWT_SECRET: str
+    JWT_SECRET: str = ""
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     REFRESH_TOKEN_EXPIRE_MINUTES: int = 43200  # 30 days in minutes
