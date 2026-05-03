@@ -23,9 +23,6 @@ class DocumentContentResponse(BaseModel):
     file_type: str
 
 
-class DocumentUploadResponse(DocumentResponse):
-    task_id: str | None = None
-
 
 class DocumentCreate(BaseModel):
     user_id: int
