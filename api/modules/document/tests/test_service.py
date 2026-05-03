@@ -159,21 +159,18 @@ async def test_upload_document(service, mocked_existing_document):
         return_value = mocked_existing_document
     )
 
-    # mock celery_app.send_task response
-    with patch("api.modules.document.service.celery_app.send_task") as mocked_task: 
-        mocked_task.return_value.task_id = "mocked-task-id" # mocked celery response
-    
+    with patch("api.modules.document.service.celery_app.send_task") as mocked_task:
         result = await service.upload_document(user_id=2, file=mocked_file, title="test")
 
         assert isinstance(result, DocumentResponse)
         assert result.id == mocked_existing_document.id
-        assert result.task_id == "mocked-task-id"
-
         service.document_repository.create_document.assert_called_once()
 
-        mocked_task.assert_called_once_with("process_document",
-            args=[ANY, mocked_existing_document.id, 2, ANY, "application/pdf"] # 1st = String from document bytes, 3rd = unique name
-        )   
+        mocked_task.assert_called_once_with(
+            "read_pdf",
+            args=[ANY, mocked_existing_document.id, 2, ANY, "application/pdf"],
+            queue="pdf_read",
+        )
 
 
 # test get document
