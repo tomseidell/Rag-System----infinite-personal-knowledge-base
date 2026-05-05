@@ -24,7 +24,7 @@ celery_app.conf.update(
     },
 )
 
-celery_app.autodiscover_tasks(["worker.tasks"]) # search for tasks in directory
+celery_app.conf.include = ["worker.tasks.read_pdf", "worker.tasks.process_document"]
 
 
 @lru_cache()
