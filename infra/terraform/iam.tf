@@ -65,7 +65,20 @@ resource "aws_iam_role_policy_attachment" "ecs_secrets" {
   policy_arn = aws_iam_policy.secrets_access.arn # what is allowed to be done
 }
 
-resource "aws_iam_role_policy_attachment" "ecs_s3" {
-  role       = aws_iam_role.ecs_task_execution_role.name
+resource "aws_iam_role" "ecs_task_role" {
+  name = "ecs-task-role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect    = "Allow"
+      Principal = { Service = "ecs-tasks.amazonaws.com" }
+      Action    = "sts:AssumeRole"
+    }]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "ecs_task_s3" {
+  role       = aws_iam_role.ecs_task_role.name
   policy_arn = aws_iam_policy.s3_access.arn
 }
