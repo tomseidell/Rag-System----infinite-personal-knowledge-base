@@ -73,18 +73,19 @@ resource "aws_ecs_task_definition" "worker" {
   memory = var.worker_fargate_memory
 
   container_definitions = templatefile("./templates/ecs/worker.json.tpl", {
-    worker_image = "${aws_ecr_repository.worker.repository_url}:latest"
-    aws_region   = var.region
-    db_user               = var.db_user
-    db_name               = var.db_name
-    db_host               = aws_db_instance.postgres.address
-    environment           = var.environment
-    db_password_arn       = "${aws_db_instance.postgres.master_user_secret[0].secret_arn}:password::"
-    openai_key_arn        = "${aws_secretsmanager_secret.main.arn}:OPENAI_API_KEY::"
-    qdrant_key_arn        = "${aws_secretsmanager_secret.main.arn}:QDRANT_API_KEY::"
-    qdrant_url            = var.qdrant_url
-    redis_url             = "redis://${aws_elasticache_cluster.main.cache_nodes[0].address}:${aws_elasticache_cluster.main.port}"
-    s3_bucket_name        = aws_s3_bucket.main.id
+    worker_image    = "${aws_ecr_repository.worker.repository_url}:latest"
+    aws_region      = var.region
+    db_user         = var.db_user
+    db_name         = var.db_name
+    db_host         = aws_db_instance.postgres.address
+    environment     = var.environment
+    db_password_arn = "${aws_db_instance.postgres.master_user_secret[0].secret_arn}:password::"
+    jwt_secret_arn  = "${aws_secretsmanager_secret.main.arn}:JWT_SECRET::"
+    openai_key_arn  = "${aws_secretsmanager_secret.main.arn}:OPENAI_API_KEY::"
+    qdrant_key_arn  = "${aws_secretsmanager_secret.main.arn}:QDRANT_API_KEY::"
+    qdrant_url      = var.qdrant_url
+    redis_url       = "redis://${aws_elasticache_cluster.main.cache_nodes[0].address}:${aws_elasticache_cluster.main.port}"
+    s3_bucket_name  = aws_s3_bucket.main.id
   })
 }
 
@@ -123,7 +124,9 @@ resource "aws_ecs_task_definition" "pdf_reader" {
     db_host         = aws_db_instance.postgres.address
     environment     = var.environment
     db_password_arn = "${aws_db_instance.postgres.master_user_secret[0].secret_arn}:password::"
+    jwt_secret_arn  = "${aws_secretsmanager_secret.main.arn}:JWT_SECRET::"
     redis_url       = "redis://${aws_elasticache_cluster.main.cache_nodes[0].address}:${aws_elasticache_cluster.main.port}"
+    s3_bucket_name  = aws_s3_bucket.main.id
   })
 }
 
