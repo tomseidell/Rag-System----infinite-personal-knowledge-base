@@ -8,9 +8,10 @@ resource "aws_ecs_cluster" "main" { # cluster containing api, worker, and pdf-re
 # plan for starting api container 
 resource "aws_ecs_task_definition" "api" {
 
-  # task level config 
-  family = "api-task" # task name 
+  # task level config
+  family = "api-task" # task name
   execution_role_arn = aws_iam_role.ecs_task_execution_role.arn # iam role for ecs to pull images from ecr and to push logs to cloud watch
+  task_role_arn      = aws_iam_role.ecs_task_role.arn # iam role for code inside the container (S3, etc.)
   network_mode = "awsvpc" # container receives dedicated ip from vpc
   requires_compatibilities = ["FARGATE"] # let aws validate task definition for fargate => when misconfig : throws error before starting
   # ressources for container
@@ -66,6 +67,7 @@ resource "aws_ecs_service" "api" {
 resource "aws_ecs_task_definition" "worker" {
   family = "worker-task"
   execution_role_arn = aws_iam_role.ecs_task_execution_role.arn
+  task_role_arn      = aws_iam_role.ecs_task_role.arn
   network_mode = "awsvpc"
   requires_compatibilities = ["FARGATE"]
 
