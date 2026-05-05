@@ -40,7 +40,7 @@ variable "worker_fargate_cpu" {
 }
 variable "worker_fargate_memory" {
   description = "Memory in MB for the worker container (FastEmbed model + PDF content in RAM)"
-  default     = "2048"
+  default     = "4096"
 }
 
 

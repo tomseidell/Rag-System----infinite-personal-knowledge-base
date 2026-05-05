@@ -11,10 +11,9 @@ from shared.modules.user.model import User
 from shared.modules.document.model import Document  
 from shared.core.exceptions import OllamaException, QdrantException, StorageException, OpenaiException
 
-from worker.celery_app import celery_app
+from worker.celery_app import celery_app, get_qdrant_service
 from worker.clients.redis_service import RedisService
 from worker.clients.storage_service import StorageService
-from worker.clients.qdrant_service import QdrantService
 from worker.clients.llm.dependency import get_llm_service
 from worker.chunk.chunk_repository import ChunkRepositorySync
 from worker.chunk.chunk_service import ChunkServiceSync
@@ -45,7 +44,7 @@ def embed_document(
     # dependencies:
     db = SyncSessionLocal()
     storage_service = StorageService()
-    qdrant_service = QdrantService()
+    qdrant_service = get_qdrant_service()
     llm_service = get_llm_service()
     redis_service = RedisService()
     chunk_repo = ChunkRepositorySync(db=db)
