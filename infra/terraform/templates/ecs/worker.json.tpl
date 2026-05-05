@@ -17,7 +17,8 @@
       { "name": "DB_NAME", "value": "${db_name}" },
       { "name": "DB_HOST", "value": "${db_host}" },
       { "name": "ENVIRONMENT", "value": "${environment}" },
-      { "name": "DENSE_VECTOR_SIZE", "value": "768" },
+      { "name": "DENSE_VECTOR_SIZE", "value": "1536" },
+      { "name": "WORKER_TYPE", "value": "embedder" },
       { "name": "QDRANT_URL", "value": "${qdrant_url}" },
       { "name": "CELERY_BROKER_URL", "value": "${redis_url}" },
       { "name": "CELERY_RESULT_BACKEND", "value": "${redis_url}" },
@@ -29,6 +30,7 @@
     ],
     "secrets": [
       { "name": "DATABASE_PASSWORD", "valueFrom": "${db_password_arn}" },
+      { "name": "JWT_SECRET", "valueFrom": "${jwt_secret_arn}" },
       { "name": "OPENAI_API_KEY", "valueFrom": "${openai_key_arn}" },
       { "name": "QDRANT_API_KEY", "valueFrom": "${qdrant_key_arn}" }
     ]
