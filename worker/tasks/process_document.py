@@ -7,6 +7,8 @@ from celery.exceptions import SoftTimeLimitExceeded
 
 from shared.database import SyncSessionLocal
 from shared.modules.chunk.model import Chunk
+from shared.modules.user.model import User  
+from shared.modules.document.model import Document  
 from shared.core.exceptions import OllamaException, QdrantException, StorageException, OpenaiException
 
 from worker.celery_app import celery_app
