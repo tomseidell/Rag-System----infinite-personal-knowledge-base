@@ -21,7 +21,10 @@ class QdrantInsertResult:
 
 class QdrantService:
     def __init__(self):
-        self.client = QdrantClient(url=os.getenv("QDRANT_URL", "http://localhost:6333"))
+        self.client = QdrantClient(
+            url=os.getenv("QDRANT_URL", "http://localhost:6333"),
+            api_key=os.getenv("QDRANT_API_KEY"),
+        )
         self.sparse_model = SparseTextEmbedding(model_name="prithivida/Splade_PP_en_v1")
         self.ensure_collection()
 
