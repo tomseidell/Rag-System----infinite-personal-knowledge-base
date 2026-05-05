@@ -20,10 +20,12 @@
       { "name": "CELERY_BROKER_URL", "value": "${redis_url}" },
       { "name": "CELERY_RESULT_BACKEND", "value": "${redis_url}" },
       { "name": "REDIS_URL", "value": "${redis_url}" },
-      { "name": "WORKER_TYPE", "value": "pdf_reader" }
+      { "name": "WORKER_TYPE", "value": "pdf_reader" },
+      { "name": "S3_BUCKET_NAME", "value": "${s3_bucket_name}" }
     ],
     "secrets": [
-      { "name": "DATABASE_PASSWORD", "valueFrom": "${db_password_arn}" }
+      { "name": "DATABASE_PASSWORD", "valueFrom": "${db_password_arn}" },
+      { "name": "JWT_SECRET", "valueFrom": "${jwt_secret_arn}" }
     ]
   }
 ]
