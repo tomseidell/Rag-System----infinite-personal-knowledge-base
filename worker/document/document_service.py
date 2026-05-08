@@ -20,10 +20,12 @@ class DocumentService:
     def extract_text_from_pdf(self, content: str) -> str:
         doc = None
         try:
+            # validate true = throws error for invalid base64
             content_bytes = base64.b64decode(content, validate=True)
             doc = pymupdf.open(stream=content_bytes, filetype="pdf")
             pages = []
 
+            # pagewise extraction
             for page_num in range(len(doc)):
                 try:
                     page = doc.load_page(page_num)

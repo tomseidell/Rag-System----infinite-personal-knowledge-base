@@ -16,6 +16,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 # create user for application with --system config 
+# user is only allowed to run application -- nothing else
 RUN useradd --system --uid 1001 api \
     && mkdir -p /app/.cache/huggingface \
     && chown -R api:api /app/.cache
