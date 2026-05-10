@@ -16,8 +16,6 @@ from api.modules.document.exceptions import DocumentNotFoundException
 from api.clients.storage.service import AsyncStorageService
 from api.modules.user.repository import UserRepository
 
-#from worker.tasks.process_document import process_document
-
 from api.clients.qdrant.service import AsyncQdrantService
 from api.clients.qdrant.exceptions import QdrantException
 
@@ -141,15 +139,15 @@ class DocumentService:
 
     async def delete_document(self, user_id:int, document_id:int) ->None:
         try:
+            # Fetch chunk IDs before deleting the document 
+            chunks_ids = await self.chunk_service.get_chunks_for_doc(document_id=document_id, user_id=user_id)
+
             # if no document is found, DocumentNotFoundException is being raised
             document = await self.document_repository.delete_document(user_id=user_id, document_id=document_id)
 
-            chunks_ids = await self.chunk_service.get_chunks_for_doc(document_id=document_id, user_id=user_id) 
-
             tasks = []
-            
-            if chunks_ids: # min len 1 
-                await self.chunk_service.delete_chunks_for_doc(user_id=user_id, document_id=document_id)
+
+            if chunks_ids:
                 tasks.append(self.qdrant.delete_many_chunks(chunk_ids=chunks_ids))
             
             if document.storage_path:
