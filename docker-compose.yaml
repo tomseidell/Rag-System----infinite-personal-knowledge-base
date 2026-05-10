@@ -43,7 +43,29 @@ services:
       depends_on:
         - api
       command: npm run dev -- --host 0.0.0.0
-    worker:
+    worker-pdf:
+      build:
+        context: .
+        dockerfile: worker/Dockerfile
+      depends_on:
+        - redis
+        - db
+      env_file:
+        - .env
+      environment:
+        - CELERY_BROKER_URL=redis://redis:6379
+        - CELERY_RESULT_BACKEND=redis://redis:6379
+        - REDIS_URL=redis://redis:6379
+        - OLLAMA_HOST=http://host.docker.internal:11434
+        - QDRANT_URL=http://vector:6333
+        - S3_BUCKET_NAME=second-brain-dev
+        - S3_ENDPOINT_URL=http://minio:9000
+        - AWS_ACCESS_KEY_ID=minioadmin
+        - AWS_SECRET_ACCESS_KEY=minioadmin
+      volumes:
+        - .:/app
+      command: celery -A worker.celery_app worker --loglevel=info --queues=pdf_read --concurrency=1
+    worker-embed:
       build:
         context: .
         dockerfile: worker/Dockerfile
@@ -52,20 +74,21 @@ services:
         - db
         - vector
       env_file:
-        - .env                                  
+        - .env
       environment:
         - CELERY_BROKER_URL=redis://redis:6379
         - CELERY_RESULT_BACKEND=redis://redis:6379
+        - REDIS_URL=redis://redis:6379
         - OLLAMA_HOST=http://host.docker.internal:11434
         - QDRANT_URL=http://vector:6333
         - S3_BUCKET_NAME=second-brain-dev
         - S3_ENDPOINT_URL=http://minio:9000
         - AWS_ACCESS_KEY_ID=minioadmin
         - AWS_SECRET_ACCESS_KEY=minioadmin
-
       volumes:
-      - .:/app
-      command: celery -A worker.celery_app worker --loglevel=info --queues=documents --concurrency=1 # 1 task per worker
+        - .:/app
+        - huggingface_cache:/app/.cache/huggingface
+      command: celery -A worker.celery_app worker --loglevel=info --queues=embed --concurrency=1
     db:
       image: postgres:15-alpine
       environment:
