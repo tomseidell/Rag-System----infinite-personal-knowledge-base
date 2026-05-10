@@ -42,22 +42,26 @@ class ChatService():
 
         ressources: list[Ressource] = []
         for source in sources:
-            ressource = await self.document_service.get_document_name_and_id(user_id=user_id, document_id=source)
-            ressources.append(Ressource(id=ressource[0], name= ressource[1]))
+            try:
+                ressource = await self.document_service.get_document_name_and_id(user_id=user_id, document_id=source)
+                ressources.append(Ressource(id=ressource[0], name=ressource[1]))
+            except Exception:
+                pass
 
 
         chunks : list[str] = []
         async for chunk in self.llm_service.create_message(texts=texts, user_input=message):
             chunks.append(chunk)
             yield chunk
-        # return ressources at the end, separately 
-        yield ressources
+        # return ressources at the end, separately
+        ressources_data = [r.model_dump() for r in ressources]
+        yield json.dumps(ressources_data)
 
         # create new redis entry to cache response
         if not cached_response:
             full_response = "".join(chunks)
             await self.redis_service.set(cache_key, json.dumps({
                 "response": full_response,
-                "ressources": ressources
+                "ressources": ressources_data
             }), ttl=3600)
 

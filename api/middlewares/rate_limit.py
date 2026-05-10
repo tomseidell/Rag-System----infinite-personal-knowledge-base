@@ -5,6 +5,7 @@ from fastapi.responses import JSONResponse
 AUTH_PATHS = {"/user/login", "/user/register"}
 AUTH_LIMIT = 10
 AUTH_TTL = 60 * 60 * 24  # 24 hours
+RATE_LIMIT_BYPASS_IPS = {"127.0.0.1", "::1"}  # localhost — for local e2e tests
 
 async def rate_limit_middleware(request: Request, call_next):
     redis_service = get_redis_service()
@@ -18,6 +19,10 @@ async def rate_limit_middleware(request: Request, call_next):
             status_code=400,
             content={"detail": "Invalid http request"}
         )
+
+    # skip rate limiting for local development
+    if request.client.host in RATE_LIMIT_BYPASS_IPS:
+        return await call_next(request)
 
     client_ip = request.client.host
 
