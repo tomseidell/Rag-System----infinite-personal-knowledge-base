@@ -17,6 +17,8 @@ from api.modules.user.dependencies import get_user_repository
 from api.modules.chunk.service import ChunkServiceAsync
 from api.modules.chunk.dependencies import get_chunk_service_async
 
+from api.clients.redis.service import RedisService
+from api.clients.redis.dependency import get_redis_service
 
 
 def get_document_repository(db: AsyncSession = Depends(get_db)) -> DocumentRepository:
@@ -28,6 +30,7 @@ def get_document_service(
      user_repo:UserRepository = Depends(get_user_repository),
      qdrant_service:AsyncQdrantService = Depends(get_qdrant_service),
      chunk_service:ChunkServiceAsync = Depends(get_chunk_service_async),
-     db: AsyncSession = Depends(get_db)
+     db: AsyncSession = Depends(get_db),
+     redis_service:RedisService = Depends(get_redis_service),
      ):
-    return DocumentService(document_repository=document_repo, storage=storage,user_repository=user_repo, qdrant_service=qdrant_service, chunk_service=chunk_service, db=db) 
+    return DocumentService(document_repository=document_repo, storage=storage, user_repository=user_repo, qdrant_service=qdrant_service, chunk_service=chunk_service, db=db, redis_service=redis_service)

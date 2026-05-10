@@ -22,20 +22,23 @@ from api.clients.qdrant.exceptions import QdrantException
 from api.modules.chunk.service import ChunkServiceAsync
 
 import base64
+import json
 
 from worker.celery_app import celery_app
 
+from api.clients.redis.service import RedisService
 
 
 
 class DocumentService:
-    def __init__(self, document_repository:DocumentRepository, storage:AsyncStorageService, user_repository:UserRepository, qdrant_service:AsyncQdrantService, chunk_service:ChunkServiceAsync, db:AsyncSession):
+    def __init__(self, document_repository:DocumentRepository, storage:AsyncStorageService, user_repository:UserRepository, qdrant_service:AsyncQdrantService, chunk_service:ChunkServiceAsync, db:AsyncSession, redis_service:RedisService):
         self.document_repository = document_repository
         self.storage = storage
         self.user_repository = user_repository
         self.qdrant = qdrant_service
         self.chunk_service = chunk_service
         self.db = db
+        self.redis = redis_service
 
     # private methods
     def _calculate_hash(self, content:bytes) ->str:
@@ -179,3 +182,12 @@ class DocumentService:
         if document is None:
             raise NotFoundException("document")
         return document.id, document.original_filename
+
+    async def get_document_status(self, user_id:int, document_id:int) -> dict:
+        document = await self.document_repository.get_document(user_id=user_id, document_id=document_id)
+        if document is None:
+            raise NotFoundException("document")
+        raw = await self.redis.get(f"document:status:{document_id}")
+        if not raw:
+            raise NotFoundException("document status")
+        return json.loads(raw)
