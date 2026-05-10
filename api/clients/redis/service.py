@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 
 class RedisService:
     def __init__(self):
-        self.client = redis.Redis.from_url(url=os.getenv("REDIS_URL", "http://localhost:6379"))
+        self.client = redis.Redis.from_url(url=os.getenv("REDIS_URL", "redis://localhost:6379"))
 
     async def _execute(self, operation: str, call):
         try:
