@@ -4,8 +4,6 @@ import pymupdf
 from httpx import AsyncClient
 
 BASE_URL = "http://localhost:8000"
-QDRANT_URL = "http://localhost:6333"
-QDRANT_COLLECTION = "second_brain"
 
 
 @pytest.fixture(scope="session")
@@ -36,7 +34,6 @@ def state() -> dict:
 
 
 async def _delete_all_documents(client: AsyncClient) -> None:
-    """Paginate through all documents and delete each one (DB + Qdrant + Storage)."""
     cursor = None
     while True:
         params = {"cursor": cursor} if cursor else {}
@@ -51,39 +48,20 @@ async def _delete_all_documents(client: AsyncClient) -> None:
             break
 
 
-async def _delete_orphaned_qdrant_vectors(user_id: int) -> None:
-    """Delete all Qdrant vectors for this user — catches orphaned vectors not in DB."""
-    async with AsyncClient(base_url=QDRANT_URL) as qdrant:
-        await qdrant.post(
-            f"/collections/{QDRANT_COLLECTION}/points/delete",
-            json={"filter": {"must": [{"key": "user_id", "match": {"value": user_id}}]}},
-        )
-
-
 @pytest_asyncio.fixture(scope="session", autouse=True)
 async def cleanup(client: AsyncClient, state: dict):
     from tests.e2e.test_document_upload import TEST_EMAIL, TEST_FULLNAME, TEST_PASSWORD
 
-    # Register (idempotent) and login to get user_id
-    register_resp = await client.post(
+    await client.post(
         "/user/register",
         json={"fullname": TEST_FULLNAME, "email": TEST_EMAIL, "password": TEST_PASSWORD},
     )
     await client.post("/user/login", json={"email": TEST_EMAIL, "password": TEST_PASSWORD})
-
-    # Delete all DB documents (also cleans Qdrant + Storage via the API)
     await _delete_all_documents(client)
-
-    # Delete any orphaned Qdrant vectors (documents deleted from DB but not Qdrant)
-    user_id = register_resp.json().get("id") if register_resp.status_code == 201 else None
-    if user_id:
-        await _delete_orphaned_qdrant_vectors(user_id)
-
     await client.post("/user/logout")
 
     yield
 
-    # Teardown: delete the document created in this session
     doc_id = state.get("document_id")
     if doc_id:
         await client.delete(f"/document/{doc_id}")
