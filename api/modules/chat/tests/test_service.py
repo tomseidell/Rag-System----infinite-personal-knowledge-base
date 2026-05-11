@@ -2,7 +2,6 @@ import json
 import pytest
 from unittest.mock import AsyncMock, MagicMock
 from api.modules.chat.service import ChatService
-from api.modules.chat.schemas import Ressource
 from shared.core.exceptions import NotFoundException
 
 

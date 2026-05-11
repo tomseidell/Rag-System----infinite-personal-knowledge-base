@@ -3,7 +3,6 @@ from unittest.mock import MagicMock
 from sqlalchemy.exc import SQLAlchemyError
 from worker.document.document_repository import DocumentRepositorySync
 from shared.core.exceptions import DatabaseException
-from shared.modules.document.exceptions import DocumentNotFoundException
 
 
 @pytest.fixture(scope="function")

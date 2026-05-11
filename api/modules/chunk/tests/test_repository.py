@@ -1,5 +1,5 @@
 import pytest
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock
 from sqlalchemy.exc import SQLAlchemyError
 from api.modules.chunk.repository import ChunkRepository
 from shared.core.exceptions import DatabaseException

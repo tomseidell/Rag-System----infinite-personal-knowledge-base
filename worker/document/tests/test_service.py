@@ -3,7 +3,7 @@ import pytest
 import pymupdf
 from unittest.mock import MagicMock
 from worker.document.document_service import DocumentService
-from worker.document.exceptions import PDFProcessingException, TextSplittingException
+from worker.document.exceptions import PDFProcessingException
 
 
 @pytest.fixture(scope="module")
