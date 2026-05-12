@@ -67,13 +67,11 @@ class DocumentService:
         encoded_bytes = base64.b64encode(content) # create ASCII bytes
         return encoded_bytes.decode("utf-8") # create string
 
-
-    async def upload_document(self, user_id: int, title: str| None, file:UploadFile) -> DocumentResponse:
-        content = await file.read()#bytes, runs in separate threadpool
-        if len(content) >= 10 * 1024 * 1024: #10mb max
+    def _validate_document_upload(self, file: UploadFile, content: bytes) -> str:
+        if len(content) >= 10 * 1024 * 1024:
             raise InputError(
                 operation="upload_document",
-                detail= "File is too large"
+                detail="File is too large"
             )
 
         if not file.filename:
@@ -81,18 +79,26 @@ class DocumentService:
                 operation="upload_document",
                 detail="Filename is missing"
             )
-        
-        content_type = file.content_type or "application/octet-stream" # fallback undefined content type
 
         source_type = self._get_file_extension(filename=file.filename)
-
         if source_type != "pdf":
             raise InputError(
                 operation="upload_document",
                 detail="inserted file is not pdf"
             )
 
-        name = self._generate_unique_filename(filename=file.filename)
+        return file.filename
+
+
+    async def upload_document(self, user_id: int, title: str| None, file:UploadFile) -> DocumentResponse:
+        content = await file.read()#bytes, runs in separate threadpool
+
+        filename = self._validate_document_upload(file=file, content=content)
+
+        source_type = self._get_file_extension(filename=filename)
+        content_type = file.content_type or "application/octet-stream" # fallback undefined content type
+
+        name = self._generate_unique_filename(filename=filename)
 
         # create unique hash acting as identifier for each document 
         content_hash = await asyncio.to_thread(self._calculate_hash, content) # asyncio to move task to different thread
@@ -100,16 +106,16 @@ class DocumentService:
         # check if document with hash is already stored in db
         existing = await self.document_repository.check_for_existing_hash(user_id=user_id, content_hash=content_hash)
 
-        if existing: #do not save document if already existing 
+        if existing:
             return DocumentResponse.model_validate(existing) 
 
         if not title: # if no title provided, create title automatically based on filename
-            title = self._create_title_from_file(filename=file.filename)
+            title = self._create_title_from_file(filename=filename)
 
         document = DocumentCreate(
             user_id = user_id,
             title = title,
-            original_filename = file.filename,
+            original_filename = filename,
             file_size=len(content),
             file_type=content_type,
             source_type=source_type,
