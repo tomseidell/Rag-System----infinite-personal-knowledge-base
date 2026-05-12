@@ -5,8 +5,6 @@ from api.modules.chat.router import router as chat_router
 
 router = APIRouter()
 
-# test ci/cd pipeline
-
 
 router.include_router(user_router, prefix="/user", tags= ["users"])
 router.include_router(document_router, prefix="/document", tags=["document"])
@@ -14,7 +12,7 @@ router.include_router(chat_router, prefix="/chat", tags=["chat"])
 
 @router.get("/")
 async def root():
-    return {"message": "Welcome to FastAPI Project testrrrr"}
+    return {"message": "Welcome to FastAPI Project"}
 
 @router.get("/health")
 async def health_check():
