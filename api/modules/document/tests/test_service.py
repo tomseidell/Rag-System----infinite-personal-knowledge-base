@@ -22,6 +22,7 @@ def service():
         qdrant_service=AsyncMock(),
         chunk_service=AsyncMock(),
         db=AsyncMock(),
+        redis_service=AsyncMock(),
         )
 
 @pytest.fixture(scope="function")
