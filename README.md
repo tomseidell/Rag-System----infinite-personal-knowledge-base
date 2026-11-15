@@ -4,7 +4,7 @@
 <p align="center">
   <a href="README.md"><img src="https://img.shields.io/badge/Start-4F46E5?style=for-the-badge" alt="Start"></a>
   <a href="docs/ARCHITECTURE.md"><img src="https://img.shields.io/badge/Architecture-334155?style=for-the-badge" alt="Architecture"></a>
-  <a href="api/API_DOC.md"><img src="https://img.shields.io/badge/API-334155?style=for-the-badge" alt="API"></a>
+  <a href="api/README.md"><img src="https://img.shields.io/badge/API-334155?style=for-the-badge" alt="API"></a>
   <a href="docs/TESTING.md"><img src="https://img.shields.io/badge/Testing-334155?style=for-the-badge" alt="Testing"></a>
   <a href="docs/CODE_COMMENTS.md"><img src="https://img.shields.io/badge/Comments-334155?style=for-the-badge" alt="Comments"></a>
   <a href="docs/GLOSSARY.md"><img src="https://img.shields.io/badge/Glossary-334155?style=for-the-badge" alt="Glossary"></a>
@@ -148,7 +148,7 @@ curl -b cookies.txt -N -X POST localhost:8000/chat/ -H "Content-Type: applicatio
      -d '{"message":"What is the main finding of the paper?"}'
 ```
 
-The exact request fields are listed in the [API reference](api/API_DOC.md).
+The exact request fields are listed in the [API reference](api/README.md).
 
 ## Environment Variables
 

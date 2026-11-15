@@ -2,7 +2,7 @@
 <p align="center">
   <a href="../README.md"><img src="https://img.shields.io/badge/Start-334155?style=for-the-badge" alt="Start"></a>
   <a href="../docs/ARCHITECTURE.md"><img src="https://img.shields.io/badge/Architecture-334155?style=for-the-badge" alt="Architecture"></a>
-  <a href="API_DOC.md"><img src="https://img.shields.io/badge/API-4F46E5?style=for-the-badge" alt="API"></a>
+  <a href="README.md"><img src="https://img.shields.io/badge/API-4F46E5?style=for-the-badge" alt="API"></a>
   <a href="../docs/TESTING.md"><img src="https://img.shields.io/badge/Testing-334155?style=for-the-badge" alt="Testing"></a>
   <a href="../docs/CODE_COMMENTS.md"><img src="https://img.shields.io/badge/Comments-334155?style=for-the-badge" alt="Comments"></a>
   <a href="../docs/GLOSSARY.md"><img src="https://img.shields.io/badge/Glossary-334155?style=for-the-badge" alt="Glossary"></a>
@@ -11,18 +11,9 @@
 
 # API reference
 
-All HTTP endpoints of the backend are created in the routers in `api/modules/*/router.py` and registered in`api/routes.py`. There are **12 endpoints** in total. Exact API documentation can also be found via the /swagger endpoint
+All HTTP endpoints of the backend are created in the routers in `api/modules/*/router.py` and registered in `api/routes.py`. There are **12 endpoints** in total. Exact API documentation can also be found via the /swagger endpoint.
 
-## Basics
-
-|                  |                                                                  |
-| ---------------- | ---------------------------------------------------------------- | --- |
-| Local base URL   | `http://localhost:8000`                                          |
-| Interactive docs | Swagger UI at `/docs`, ReDoc at `/redoc`                         |
-| Metrics          | `/metrics` in Prometheus format (not part of the OpenAPI schema) |
-| Format           | JSON. Exceptions are the file upload (`multipart/form-data`)     |     |
-
-### Authentication
+## Authentication
 
 Login works with an email and a password. The server answers with two cookies and **no token in the response body**:
 
@@ -36,7 +27,7 @@ Login works with an email and a password. The server answers with two cookies an
 - Every refresh issues a **new pair** of tokens. The server keeps only a hash of the latest refresh token, so an older one stops working.
 - Every document and chat query is limited to the signed-in user. Another user's document answers `404`, not `403`.
 
-### Rate limit
+## Rate limit
 
 Every request counts against a limit of **100 requests per minute and IP address**, stored in Redis. `/health` and `/metrics` are excluded.
 
@@ -99,7 +90,7 @@ The answer comes back immediately. Reading, chunking and embedding run in the ba
 | ------ | -------- | ---- | ---------------------------------------------------------------------- |
 | `POST` | `/chat/` | user | Ask a question about your documents, answer arrives as an event stream |
 
-A question that was already asked by the same user within the last hour is answered from the Redis cache
+A question that was already asked by the same user within the last hour is answered from the Redis cache.
 
 ## Errors
 
