@@ -138,8 +138,6 @@ Stop everything with `docker compose down`. Add `-v` to also delete the stored d
 
 ### Your first document
 
-Register and log in through the frontend, or use the API directly. The login sets HttpOnly cookies, so keep them with `-c` / `-b`:
-
 ```bash
 curl -X POST localhost:8000/user/register -H "Content-Type: application/json" \
      -d '{"email":"me@example.com","fullname":"Me","password":"a-strong-password"}'
