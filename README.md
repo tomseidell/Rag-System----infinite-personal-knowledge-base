@@ -182,7 +182,6 @@ JWT_SECRET=change-me-to-something-long-and-random
 ## Repository Map
 
 ```
-.
 ├── api/                     FastAPI app
 │   ├── main.py              app setup: middleware, CORS, metrics, lifespan
 │   ├── routes.py            mounts /user, /document, /chat, /health
