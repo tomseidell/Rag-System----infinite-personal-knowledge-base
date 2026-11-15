@@ -1,282 +1,209 @@
-# FastAPI Document Processing & Chat Application
+<h1 align="center">Second Brain</h1>
 
-A comprehensive FastAPI-based backend application for document processing, vector storage, and AI-powered chat capabilities. Built with modern Python technologies including async database operations, task queuing with Celery, vector search with Qdrant, and AI integration with Ollama.
+<p align="center"><em>Upload your PDFs, then ask questions about them in plain language.</em></p>
 
-## 🎯 Overview
+<!-- doc navigation -->
+<p align="center">
+  <a href="README.md"><img src="https://img.shields.io/badge/Start-4F46E5?style=for-the-badge" alt="Start"></a>
+  <a href="docs/ARCHITECTURE.md"><img src="https://img.shields.io/badge/Architecture-334155?style=for-the-badge" alt="Architecture"></a>
+  <a href="docs/API_DOC.md"><img src="https://img.shields.io/badge/API-334155?style=for-the-badge" alt="API"></a>
+  <a href="docs/TESTING.md"><img src="https://img.shields.io/badge/Testing-334155?style=for-the-badge" alt="Testing"></a>
+  <a href="docs/CODE_COMMENTS.md"><img src="https://img.shields.io/badge/Comments-334155?style=for-the-badge" alt="Comments"></a>
+  <a href="docs/GLOSSARY.md"><img src="https://img.shields.io/badge/Glossary-334155?style=for-the-badge" alt="Glossary"></a>
+  <a href="docs/CONTRIBUTING.md"><img src="https://img.shields.io/badge/Contributing-334155?style=for-the-badge" alt="Contributing"></a>
+</p>
 
-This project provides a production-ready API for:
-- **User Management**: Authentication, authorization, and user profiles
-- **Document Processing**: Upload, parse, and chunk documents (PDFs supported)
-- **Vector Storage**: Manage embeddings using Qdrant vector database
-- **AI Chat**: Interactive chat with AI-powered responses
-- **Task Queue**: Asynchronous document processing with Celery
-- **Monitoring**: Prometheus metrics and Grafana dashboards
-- **Rate Limiting**: Built-in request rate limiting middleware
+<p align="center">
+  <img src="https://img.shields.io/badge/Python-3.12-3776AB?logo=python&logoColor=white" alt="Python 3.12">
+  <img src="https://img.shields.io/badge/FastAPI-0.128-009688?logo=fastapi&logoColor=white" alt="FastAPI">
+  <img src="https://img.shields.io/badge/PostgreSQL-15-4169E1?logo=postgresql&logoColor=white" alt="PostgreSQL 15">
+  <img src="https://img.shields.io/badge/Celery-workers-37814A?logo=celery&logoColor=white" alt="Celery">
+  <img src="https://img.shields.io/badge/Qdrant-vector%20search-DC244C" alt="Qdrant">
+  <img src="https://img.shields.io/badge/Docker-compose-2496ED?logo=docker&logoColor=white" alt="Docker Compose">
+</p>
 
-## 📦 Tech Stack
+Second Brain is a personal knowledge base. You upload PDF files and the backend turns them into searchable pieces. When you ask a question in the chat it finds the information that fit best and summarizes everything via a LLM.
 
-### Core Framework
-- **FastAPI** (0.104.1) - Modern, fast web framework for building APIs
-- **Uvicorn** (0.24.0) - ASGI web server
-- **Pydantic** (≥2.9) - Data validation and settings management
+This repository holds the **FastAPI backend**, the **Celery workers** that process documents, the **React frontend** and the **Terraform** code for the AWS deployment.
 
-### Database & Storage
-- **PostgreSQL** (15-alpine) - Primary relational database
-- **SQLAlchemy** (2.0.23) - ORM with async support
-- **Alembic** (1.12.1) - Database migrations
-- **Redis** (7.1.0) - Caching and Celery broker
-- **Qdrant** (latest) - Vector database for embeddings
-- **Google Cloud Storage** - Document storage backend
+## The short version
 
-### AI & NLP
-- **Ollama** - Local LLM integration
-- **LangChain Text Splitters** - Document chunking
-- **FastEmbed** - Embedding generation
-- **PyPDF**, **PyMuPDF** - PDF processing
+|                     |                                                                                                                                                                       |
+| ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **What it does**    | PDF upload, text extraction, chunking, embeddings, hybrid search, streamed chat answers with sources                                                                  |
+| **Backend**         | Python 3.12, FastAPI, async SQLAlchemy 2, Alembic, Pydantic settings                                                                                                  |
+| **Background jobs** | Celery with Redis as broker, two queues (`pdf_read` and `embed`), one worker each                                                                                     |
+| **Storage**         | PostgreSQL (users, documents, chunks) · Qdrant (vectors) · S3 or MinIO (the PDF files) · Redis (job status, chat cache, rate limit)                                   |
+| **Language models** | Local in development: Ollama (`nomic-embed-text` for embeddings, `llama3` for answers). In every other environment: OpenAI (`text-embedding-3-small`, `gpt-5.4-nano`) |
+| **Frontend**        | React + TypeScript + Vite, pages for login, chat and settings                                                                                                         |
+| **Observability**   | Prometheus metrics at `/metrics`, Grafana dashboards                                                                                                                  |
+| **Delivery**        | GitHub Actions (lint, tests, dependency audit), manual deploy workflow to AWS ECS, infrastructure in Terraform                                                        |
 
-### Task Processing
-- **Celery** (5.6.0) - Distributed task queue
-- **Redis** - Message broker and result backend
+## From PDF to answer
 
-### Monitoring & Observability
-- **Prometheus** - Metrics collection
-- **Prometheus FastAPI Instrumentator** - FastAPI metrics middleware
-- **Grafana** - Visualization dashboards
+Two flows make up the whole product. The first one runs in the background after an upload, the second one happens every time you ask something.
 
-### Security & Utilities
-- **Passlib** - Password hashing
-- **PyJWT** - JWT token handling
-- **Bcrypt** - Cryptographic hashing
-- **Email Validator** - Email validation
-- **Python Dotenv** - Environment variable management
+```mermaid
+sequenceDiagram
+    autonumber
+    actor U as User
+    participant A as FastAPI
+    participant R as Redis
+    participant W1 as Worker pdf_read
+    participant W2 as Worker embed
+    participant S as S3 / MinIO
+    participant Q as Qdrant
+    participant L as LLM (Ollama / OpenAI)
 
-## 🚀 Quick Start
+    U->>A: POST /document (PDF)
+    A->>A: validate (PDF, under 10 MB), hash file
+    A-->>U: 201 document, status "processing"
+    A->>R: task read_pdf (queue pdf_read)
+    W1->>W1: extract text, split into chunks
+    W1->>R: task embed_document (queue embed)
+    W2->>L: embed every chunk
+    W2->>S: store the PDF
+    W2->>Q: save dense + sparse vectors
+    W2->>R: status "completed"
+    U->>A: GET /document/{id}/status
+    A-->>U: current step from Redis
 
-### Prerequisites
-- Python 3.11+
-- Docker & Docker Compose
-- PostgreSQL 15+ (if running without Docker)
-- Redis (if running without Docker)
-
-### Local Setup (without Docker)
-
-1. **Clone the repository and navigate to the project:**
-```bash
-cd /path/to/fastApiProject
+    U->>A: POST /chat (question)
+    A->>R: cached answer for this question?
+    A->>L: embed the question
+    A->>Q: hybrid search, only this user's chunks
+    A->>L: question + best chunks
+    L-->>A: answer token by token
+    A-->>U: server-sent events + list of source documents
 ```
 
-2. **Create a virtual environment:**
-```bash
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+Identical uploads are detected through a SHA-256 hash, so the same file is never processed twice. Answers are cached in Redis for one hour per user and question.
+
+## Building blocks
+
+```mermaid
+flowchart LR
+    B["Browser<br/>React app :5173"] -->|HTTP + cookies| API["FastAPI<br/>:8000"]
+    API --> PG[("PostgreSQL")]
+    API --> RD[("Redis<br/>broker, cache, status")]
+    API --> QD[("Qdrant<br/>vectors")]
+    API --> ST[("S3 / MinIO<br/>PDF files")]
+    API --> LLM["Ollama (dev)<br/>OpenAI (prod)"]
+    RD --> WP["Worker<br/>pdf_read"]
+    RD --> WE["Worker<br/>embed"]
+    WP --> RD
+    WE --> PG
+    WE --> QD
+    WE --> ST
+    WE --> LLM
+    PR["Prometheus :9090"] -->|scrapes /metrics| API
+    GR["Grafana :3000"] --> PR
 ```
 
-3. **Install dependencies:**
+## Start the project
+
+You need Docker with Compose. For the local language models you also need [Ollama](https://ollama.com) on your host machine, because the containers reach it through `host.docker.internal:11434` and Ollama is not running as a container via the Docker Setup.
+
 ```bash
-pip install -r requirements.txt
+git clone https://github.com/tomseidell/fastApi.git
+cd fastApi
+
+# 1. language models for development
+ollama pull nomic-embed-text
+ollama pull llama3
+
+# 2. create a .env file in the project root (see the table further down)
+
+# 3. build and start everything
+docker compose up --build
+
+# 4. create the database tables (second terminal, once after the first start)
+docker compose exec api alembic upgrade head
 ```
 
-4. **Create a `.env` file with required environment variables:**
+| Service          | URL                             | Login                       |
+| ---------------- | ------------------------------- | --------------------------- |
+| Frontend         | http://localhost:5173           | register in the app         |
+| API + Swagger UI | http://localhost:8000/docs      |                             |
+| ReDoc            | http://localhost:8000/redoc     |                             |
+| MinIO console    | http://localhost:9001           | `minioadmin` / `minioadmin` |
+| pgAdmin          | http://localhost:5050           | `admin@admin.com` / `admin` |
+| Qdrant dashboard | http://localhost:6333/dashboard |                             |
+| Prometheus       | http://localhost:9090           |                             |
+| Grafana          | http://localhost:3000           | `admin` / `admin`           |
+
+Compose creates the MinIO bucket `second-brain-dev` automatically and points the API and both workers at the Redis, Qdrant and MinIO containers.
+
+Stop everything with `docker compose down`. Add `-v` to also delete the stored data.
+
+### Your first document
+
+Register and log in through the frontend, or use the API directly. The login sets HttpOnly cookies, so keep them with `-c` / `-b`:
+
+```bash
+curl -X POST localhost:8000/user/register -H "Content-Type: application/json" \
+     -d '{"email":"me@example.com","fullname":"Me","password":"a-strong-password"}'
+curl -c cookies.txt -X POST localhost:8000/user/login -H "Content-Type: application/json" \
+     -d '{"email":"me@example.com","password":"a-strong-password"}'
+
+curl -b cookies.txt -X POST localhost:8000/document -F "file=@my-paper.pdf"
+curl -b cookies.txt localhost:8000/document/1/status        # wait until it reports "completed"
+curl -b cookies.txt -N -X POST localhost:8000/chat/ -H "Content-Type: application/json" \
+     -d '{"message":"What is the main finding of the paper?"}'
+```
+
+The exact request fields are listed in the [API reference](docs/API_DOC.md).
+
+## Configuration
+
+Settings come from the `.env` file in the project root (never commit it). Compose adds the service URLs for you.
+
+| Variable                                                         | Needed              | Meaning                                                                                                        |
+| ---------------------------------------------------------------- | ------------------- | -------------------------------------------------------------------------------------------------------------- |
+| `ENVIRONMENT`                                                    | yes                 | `development` uses Ollama and allows any CORS origin. Anything else uses OpenAI and only allows `FRONTEND_URL` |
+| `DATABASE_USER`, `DATABASE_PASSWORD`, `DATABASE_PORT`, `DB_NAME` | yes                 | PostgreSQL credentials. Compose uses `postgres` / `postgres` / `5432` / `fastapi_db`                           |
+| `DB_HOST`                                                        | yes                 | `db` inside Docker, `localhost` when the API runs on your machine                                              |
+| `JWT_SECRET`                                                     | yes                 | Key that signs the login tokens. Use a long random value                                                       |
+| `OPENAI_API_KEY`                                                 | outside development | Used for embeddings and answers                                                                                |
+| `ALGORITHM`                                                      | no                  | JWT algorithm, default `HS256`                                                                                 |
+| `ACCESS_TOKEN_EXPIRE_MINUTES`                                    | no                  | Default `30`                                                                                                   |
+| `REFRESH_TOKEN_EXPIRE_MINUTES`                                   | no                  | Default `43200` (30 days)                                                                                      |
+| `FRONTEND_URL`                                                   | no                  | Allowed CORS origin outside development, default `http://localhost:5173`                                       |
+| `COOKIE_SECURE`                                                  | no                  | Set `true` behind HTTPS so cookies are only sent securely                                                      |
+| `S3_BUCKET_NAME`, `S3_ENDPOINT_URL`                              | yes for uploads     | Bucket for the PDFs. The endpoint points to MinIO locally and stays empty on AWS                               |
+| `DB_POOL_SIZE`                                                   | no                  | Connection pool size, default `16`                                                                             |
+
+A minimal `.env` for the Docker setup:
+
 ```bash
 ENVIRONMENT=development
 DATABASE_USER=postgres
 DATABASE_PASSWORD=postgres
 DATABASE_PORT=5432
 DB_NAME=fastapi_db
-DB_HOST=localhost
-
-GCS_BUCKET_NAME=your-bucket-name
-GOOGLE_APPLICATION_CREDENTIALS=path/to/credentials.json
-
-JWT_SECRET=your-secret-key-here
-ALGORITHM=HS256
-ACCESS_TOKEN_EXPIRE_MINUTES=30
-REFRESH_TOKEN_EXPIRE_MINUTES=43200
+DB_HOST=db
+JWT_SECRET=change-me-to-something-long-and-random
 ```
 
-5. **Initialize the database:**
-```bash
-alembic upgrade head
-```
-
-6. **Run the application:**
-```bash
-python src/main.py
-```
-or
-```bash
-uvicorn src.main:app --reload
-```
-
-The API will be available at `http://localhost:8000`
-
-### Docker Setup (Recommended)
-
-1. **Ensure Docker and Docker Compose are installed**
-
-2. **Create a `.env` file** (see above)
-
-3. **Start all services:**
-```bash
-docker-compose up -d
-```
-
-4. **Run database migrations:**
-```bash
-docker-compose exec api alembic upgrade head
-```
-
-Services will be available at:
-- **API**: http://localhost:8000
-- **PostgreSQL**: localhost:5432
-- **PgAdmin**: http://localhost:5050 (admin@admin.com / admin)
-- **Qdrant Vector DB**: http://localhost:6333
-- **Redis**: localhost:6379
-- **Prometheus**: http://localhost:9090
-- **Grafana**: http://localhost:3000
-
-## 📚 API Documentation
-
-### Interactive Documentation
-- **Swagger UI (OpenAPI)**: http://localhost:8000/docs
-- **ReDoc**: http://localhost:8000/redoc
-- **Metrics**: http://localhost:8000/metrics (Prometheus format)
-
-### Available Endpoints
-
-#### Health & Root
-- `GET /` - Welcome message
-- `GET /health` - API health check
-
-#### User Management (`/user`)
-- User registration, login, and profile management
-- JWT-based authentication
-- Token refresh mechanism
-
-#### Document Management (`/document`)
-- Upload documents
-- Process and chunk documents
-- Retrieve document metadata
-- Support for PDF files with text extraction
-- Asynchronous processing with Celery workers
-
-#### Chat (`/chat`)
-- Interactive chat with AI
-- Context-aware responses using vector search
-- Integration with Ollama LLM
-
-## 🏗️ Project Structure
+## Repository Map
 
 ```
-fastApiProject/
-├── src/
-│   ├── main.py                      # FastAPI application entry point
-│   ├── routes.py                    # Main router configuration
-│   ├── config.py                    # Settings management
-│   ├── database.py                  # Database engine and session setup
-│   ├── clients/                     # External service clients
-│   │   ├── ollama/                  # Ollama LLM integration
-│   │   ├── qdrant/                  # Vector database client
-│   │   ├── redis/                   # Redis caching client
-│   │   └── storage/                 # GCS file storage client
-│   ├── core/                        # Core application logic
-│   │   ├── celery_app.py            # Celery task queue setup
-│   │   ├── exception_handlers.py    # Global exception handlers
-│   │   ├── exceptions.py            # Custom exception classes
-│   │   └── middleware/
-│   │       └── rate_limit.py        # Rate limiting middleware
-│   └── modules/                     # Feature modules
-│       ├── user/                    # User management
-│       ├── document/                # Document processing
-│       ├── chunk/                   # Document chunking
-│       └── chat/                    # Chat functionality
-├── alembic/                         # Database migrations
-│   └── versions/                    # Migration files
-├── docker-compose.yaml              # Docker services configuration
-├── Dockerfile                       # Container image definition
-├── requirements.txt                 # Python dependencies
-├── prometheus.yml                   # Prometheus configuration
-├── alembic.ini                      # Alembic configuration
-└── .env                             # Environment variables (not in repo)
+.
+├── api/                     FastAPI app
+│   ├── main.py              app setup: middleware, CORS, metrics, lifespan
+│   ├── routes.py            mounts /user, /document, /chat, /health
+│   ├── modules/             one folder per feature: user, document, chunk, chat
+│   │   └── <feature>/       router → service → repository, plus schemas, dependencies, tests/
+│   ├── clients/             wrappers around Qdrant, Redis, storage and the LLMs
+│   ├── middlewares/         rate limiting
+│   └── exception_handlers.py
+├── worker/                  Celery app and the two tasks (read_pdf, embed_document)
+├── shared/                  settings, database setup, SQLAlchemy models, exceptions
+├── alembic/                 database migrations
+├── tests/                   integration and end-to-end tests
+├── frontend/                React + Vite app
+├── infra/terraform/         AWS: network, ECS, RDS, ElastiCache, S3, ALB, IAM
+├── .github/workflows/       ci-backend.yml, cd.yml, migrate.yml
+├── docker-compose.yaml      the full local stack
+└── prometheus.yml           scrape config
 ```
-
-## 📊 Monitoring & Observability
-
-### Prometheus Metrics
-- Metrics are automatically collected from all FastAPI endpoints
-- Available at `/metrics` endpoint
-- Prometheus scrapes metrics every 15 seconds (configurable in `prometheus.yml`)
-
-### Grafana Dashboards
-- Access Grafana at http://localhost:3000
-- Add Prometheus as a data source (http://prometheus:9090)
-- Create custom dashboards for monitoring
-
-### Sample Queries
-```promql
-# Request rate
-rate(http_requests_total[5m])
-
-# Request duration
-histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m]))
-
-# Error rate
-rate(http_exceptions_total[5m])
-```
-
-## 🔐 Security Features
-
-- **JWT Authentication**: Secure token-based authentication
-- **Password Hashing**: Bcrypt-based password storage
-- **Rate Limiting**: Request rate limiting to prevent abuse
-- **CORS Configuration**: Configurable Cross-Origin Resource Sharing
-- **Environment Variables**: Sensitive data stored in `.env` file
-- **Google Cloud Integration**: Secure storage with GCS
-
-## 🔄 Async & Task Processing
-
-### Celery Workers
-Asynchronous task processing for long-running operations:
-
-```bash
-# Start a Celery worker
-celery -A src.core.celery_app worker --loglevel=info --queues=documents
-
-# Monitor tasks
-celery -A src.core.celery_app events
-```
-
-The Docker setup includes:
-- **API Service**: Main FastAPI application
-- **Worker Service**: Celery worker for document processing
-- **Redis**: Message broker and result backend
-
-## 🚦 Rate Limiting
-
-The application includes built-in rate limiting middleware:
-- Configurable per endpoint
-- Redis-backed for distributed systems
-- Prevents abuse and ensures fair resource usage
-
-## 📝 Environment Variables
-
-| Variable | Description | Example |
-|----------|-------------|---------|
-| `ENVIRONMENT` | Deployment environment | `development`, `production` |
-| `DATABASE_USER` | PostgreSQL username | `postgres` |
-| `DATABASE_PASSWORD` | PostgreSQL password | `secure_password` |
-| `DATABASE_PORT` | PostgreSQL port | `5432` |
-| `DB_NAME` | Database name | `fastapi_db` |
-| `DB_HOST` | Database host | `localhost`, `db` |
-| `DB_POOL_SIZE` | Connection pool size | `16` |
-| `GCS_BUCKET_NAME` | Google Cloud Storage bucket | `my-bucket` |
-| `GOOGLE_APPLICATION_CREDENTIALS` | Path to GCS credentials | `./credentials.json` |
-| `JWT_SECRET` | JWT signing secret | `your-secret-key` |
-| `ALGORITHM` | JWT algorithm | `HS256` |
-| `ACCESS_TOKEN_EXPIRE_MINUTES` | Access token TTL | `30` |
-| `REFRESH_TOKEN_EXPIRE_MINUTES` | Refresh token TTL | `43200` |
-
-
----
-
-**Last Updated**: January 30, 2026
