@@ -1,16 +1,5 @@
 <h1 align="center">Second Brain</h1>
 
-<!-- doc navigation -->
-<p align="center">
-  <a href="README.md"><img src="https://img.shields.io/badge/Start-4F46E5?style=for-the-badge" alt="Start"></a>
-  <a href="docs/ARCHITECTURE.md"><img src="https://img.shields.io/badge/Architecture-334155?style=for-the-badge" alt="Architecture"></a>
-  <a href="api/README.md"><img src="https://img.shields.io/badge/API-334155?style=for-the-badge" alt="API"></a>
-  <a href="docs/TESTING.md"><img src="https://img.shields.io/badge/Testing-334155?style=for-the-badge" alt="Testing"></a>
-  <a href="docs/CODE_COMMENTS.md"><img src="https://img.shields.io/badge/Comments-334155?style=for-the-badge" alt="Comments"></a>
-  <a href="docs/GLOSSARY.md"><img src="https://img.shields.io/badge/Glossary-334155?style=for-the-badge" alt="Glossary"></a>
-  <a href="docs/CONTRIBUTING.md"><img src="https://img.shields.io/badge/Contributing-334155?style=for-the-badge" alt="Contributing"></a>
-</p>
-
 <p align="center">
   <img src="https://img.shields.io/badge/Python-3.12-3776AB?logo=python&logoColor=white" alt="Python 3.12">
   <img src="https://img.shields.io/badge/FastAPI-0.128-009688?logo=fastapi&logoColor=white" alt="FastAPI">
