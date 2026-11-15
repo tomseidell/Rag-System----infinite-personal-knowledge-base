@@ -1,14 +1,3 @@
-<!-- doc navigation -->
-<p align="center">
-  <a href="../README.md"><img src="https://img.shields.io/badge/Start-334155?style=for-the-badge" alt="Start"></a>
-  <a href="../docs/ARCHITECTURE.md"><img src="https://img.shields.io/badge/Architecture-334155?style=for-the-badge" alt="Architecture"></a>
-  <a href="README.md"><img src="https://img.shields.io/badge/API-4F46E5?style=for-the-badge" alt="API"></a>
-  <a href="../docs/TESTING.md"><img src="https://img.shields.io/badge/Testing-334155?style=for-the-badge" alt="Testing"></a>
-  <a href="../docs/CODE_COMMENTS.md"><img src="https://img.shields.io/badge/Comments-334155?style=for-the-badge" alt="Comments"></a>
-  <a href="../docs/GLOSSARY.md"><img src="https://img.shields.io/badge/Glossary-334155?style=for-the-badge" alt="Glossary"></a>
-  <a href="../docs/CONTRIBUTING.md"><img src="https://img.shields.io/badge/Contributing-334155?style=for-the-badge" alt="Contributing"></a>
-</p>
-
 # API reference
 
 All HTTP endpoints of the backend are created in the routers in `api/modules/*/router.py` and registered in `api/routes.py`. There are **12 endpoints** in total. Exact API documentation can also be found via the /swagger endpoint.
