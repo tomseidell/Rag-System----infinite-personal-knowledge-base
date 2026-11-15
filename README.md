@@ -195,7 +195,7 @@ JWT_SECRET=change-me-to-something-long-and-random
 Pytest is used for testing. Install the test tools once with
 `pip install -r requirements-dev.txt`.
 
-| Level | Where | What it checks | Needs |
+| Level | Where | What it tests | Needs |
 |---|---|---|---|
 | Unit | `api/modules/<feature>/tests/`, `worker/*/tests/` | services and repositories in isolation | nothing |
 | Integration | `tests/integration/` | the repositories against a real SQLAlchemy session on an in-memory SQLite database | nothing |
