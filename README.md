@@ -9,7 +9,9 @@
   <img src="https://img.shields.io/badge/Docker-compose-2496ED?logo=docker&logoColor=white" alt="Docker Compose">
 </p>
 
-Second Brain is a personal knowledge base. You upload PDF files and the backend turns them into searchable pieces. When you ask a question in the chat it finds the information that fit best and summarizes everything via a LLM.
+## Overview
+
+Second Brain is a personal knowledge base. You upload PDF files and the backend turns them into searchable pieces. When you ask a question in the chat it finds the information that fit best and summarizes everything via a LLM. This projects reason is to organize your Data and have all important information accessible, without the need to browse trough your local documents and files. Simply ask the LLM what you want to now and you will receive the information.
 
 This repository holds the **FastAPI backend**, the **Celery workers** that process documents, the **React frontend** and the **Terraform** code for the AWS deployment.
 
