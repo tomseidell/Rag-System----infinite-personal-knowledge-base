@@ -152,9 +152,7 @@ curl -b cookies.txt -N -X POST localhost:8000/chat/ -H "Content-Type: applicatio
 
 The exact request fields are listed in the [API reference](docs/API_DOC.md).
 
-## Configuration
-
-Settings come from the `.env` file in the project root (never commit it). Compose adds the service URLs for you.
+## Environment Variables
 
 | Variable                                                         | Needed              | Meaning                                                                                                        |
 | ---------------------------------------------------------------- | ------------------- | -------------------------------------------------------------------------------------------------------------- |
