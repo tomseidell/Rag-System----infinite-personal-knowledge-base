@@ -12,13 +12,21 @@ Login works with an email and a password. The server answers with two cookies an
 | `refresh_token` | 30 days (`REFRESH_TOKEN_EXPIRE_MINUTES`)   | only `POST /user/refresh`                    |
 
 - Both cookies are `HttpOnly` and `SameSite=Strict`. They are `Secure` when `COOKIE_SECURE=true`.
-- Browsers send them automatically. With curl, store and send them with `-c cookies.txt` and `-b cookies.txt`.
-- Every refresh issues a **new pair** of tokens. The server keeps only a hash of the latest refresh token, so an older one stops working.
 - Every document and chat query is limited to the signed-in user. Another user's document answers `404`, not `403`.
 
 ## Rate limit
 
 Every request counts against a limit of **100 requests per minute and IP address**, stored in Redis. `/health` and `/metrics` are excluded.
+
+## Input validation
+
+Input is checked in two steps, before any data is stored or processed:
+
+1. **Schema check by Pydantic**. FastAPI validates the request body, query parameters and path parameters against the declared types and rules. If the 
+Input does not match the request returns with `422` before reaching the service
+2. **Rule check in the service.** Rules that need more than a type, like the checks on an uploaded file, are done in the service (for example `_validate_document_upload`). A violation raises an `InputError`, which `api/exception_handlers.py` turns into a `400`.
+
+Uploads are also de-duplicated via a simple hash of the file content, to prevent users from uploading the same document multiple times. 
 
 ## Endpoints
 
