@@ -189,3 +189,21 @@ JWT_SECRET=change-me-to-something-long-and-random
 ├── docker-compose.yaml      the full local stack
 └── prometheus.yml           scrape config
 ```
+
+## Testing
+
+Pytest is used for testing. Install the test tools once with
+`pip install -r requirements-dev.txt`.
+
+| Level | Where | What it checks | Needs |
+|---|---|---|---|
+| Unit | `api/modules/<feature>/tests/`, `worker/*/tests/` | services and repositories in isolation | nothing |
+| Integration | `tests/integration/` | the repositories against a real SQLAlchemy session on an in-memory SQLite database | nothing |
+| End-to-end | `tests/e2e/` | the whole flow against the running stack: register, log in, upload a PDF, wait for `completed`, chat, delete | `docker compose up` and Ollama |
+
+```bash
+pytest -v --ignore=tests/e2e                       # unit + integration, the same selection CI uses
+pytest api/modules/document                        # only one module
+pytest --cov=api --ignore=tests/e2e                # with coverage for the API
+pytest tests/e2e -v                                # end-to-end, API must be running on localhost:8000
+```
