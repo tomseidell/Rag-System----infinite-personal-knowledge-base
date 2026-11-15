@@ -24,7 +24,7 @@ Second Brain is a personal knowledge base. You upload PDF files and the backend 
 
 This repository holds the **FastAPI backend**, the **Celery workers** that process documents, the **React frontend** and the **Terraform** code for the AWS deployment.
 
-## The short version
+## Techstack
 
 |                     |                                                                                                                                                                       |
 | ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
