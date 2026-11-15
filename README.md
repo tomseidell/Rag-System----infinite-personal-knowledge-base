@@ -1,7 +1,5 @@
 <h1 align="center">Second Brain</h1>
 
-<p align="center"><em>Upload your PDFs, then ask questions about them in plain language.</em></p>
-
 <!-- doc navigation -->
 <p align="center">
   <a href="README.md"><img src="https://img.shields.io/badge/Start-4F46E5?style=for-the-badge" alt="Start"></a>
