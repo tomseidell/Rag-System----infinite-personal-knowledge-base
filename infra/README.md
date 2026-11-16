@@ -74,8 +74,7 @@ terraform init                  # connects to the S3 backend
 terraform plan
 terraform apply
 ```
-
- is not in Git (it holds secrets). Create `terraform.tfvars` in `infra/terraform/` with these variables:
+Create `terraform.tfvars` in `infra/terraform/` with these variables:
 
 | Variable | Meaning |
 |---|---|
