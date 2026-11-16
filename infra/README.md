@@ -59,9 +59,6 @@ Qdrant is **not** self hosted
 
 The embed worker gets the most memory because it holds the embedding model and the PDF content. Both workers run the same image, the `WORKER_TYPE` variable in the task definition (`embedder` or `pdf_reader`) selects which queue they consume.
 
-**Who may talk to whom** (`security.tf`): the internet reaches only the load balancer. The API accepts traffic only from the
-load balancer. Redis and PostgreSQL accept traffic only from the API and the workers. The workers accept no incoming traffic.
-
 ## Setup
 
 You need Terraform 1.2 or newer and an AWS CLI profile named **`admin`** (`provider "aws"` uses it) with enough rights to create the resources above.
