@@ -89,6 +89,17 @@ flowchart LR
     GR["Grafana :3000"] --> PR
 ```
 
+## Highlights
+
+- **Hybrid search:** every chunk gets a dense embedding and a sparse one (SPLADE). Qdrant searches with both and merges the results, so exact keywords and meaning count.
+- **Answers with sources:** the chat streams the answer token by token and ends with the list of documents it was based on.
+- **Uploads never block:** the API answers right away, two Celery workers read, chunk and embed in the background and the status endpoint shows the current step. Failed steps are retried with backoff.
+- **Local or cloud models, same code:** Ollama in development, OpenAI everywhere else. Both sit behind one LLM interface and are switched with `ENVIRONMENT`.
+- **Your data stays yours:** documents, chunks and searches are scoped to the signed-in user. Login uses `HttpOnly` cookies with refresh-token rotation.
+- **No double work:** identical files are detected by their SHA-256 hash, and repeated questions are answered from a Redis cache for one hour.
+- **Clean layers:** each feature module follows router → service → repository with injected dependencies, which keeps the unit tests small and fully mocked.
+- **Ready to run and ship:** one `docker compose up` starts the whole stack, Prometheus and Grafana are included and GitHub Actions plus Terraform cover tests, linting, dependency audit and deployment to AWS.
+
 ## Start the project
 
 You need Docker with Compose. For the local language models you also need [Ollama](https://ollama.com) on your host machine, because the containers reach it through `host.docker.internal:11434` and Ollama is not running as a container via the Docker Setup.
